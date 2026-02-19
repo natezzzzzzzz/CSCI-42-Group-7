@@ -152,8 +152,8 @@ body {
   font-family: var(--font-family-base);
   font-size: var(--font-regular);
   line-height: var(--line-height);
-  color: var(--neutral-darkest);
-  background-color: var(--neutral-lightest);
+  color: var(--neutral-lightest);
+  background-color: var(--neutral-darkest);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
