@@ -4,8 +4,9 @@ djangorestframework-simplejwt
 django-cors-headers
 Pillow
 
-# for frontend
-# make sure to run 'npm install' and 'npm install bulma' 
+# for some frontend bugs
+# make sure to run:
+#  npm install 
 
 # for deployment later
 # gunicorn
