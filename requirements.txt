@@ -1,0 +1,14 @@
+Django>=4.2
+djangorestframework
+djangorestframework-simplejwt
+django-cors-headers
+Pillow
+
+# for frontend
+# make sure to run 'npm install' and 'npm install bulma' 
+
+# for deployment later
+# gunicorn
+# python-dotenv
+# whitenoise
+# psycopg2-binary
