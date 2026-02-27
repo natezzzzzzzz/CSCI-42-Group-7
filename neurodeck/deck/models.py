@@ -44,7 +44,7 @@ class Deck(models.Model):
     last_studied = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.name} by {self.owner.username}"
+        return f"{self.DeckName} by {self.UserID.username}"
     
 class Flashcard(models.Model):
     CardID = models.AutoField(primary_key=True)
@@ -55,11 +55,11 @@ class Flashcard(models.Model):
     LastReviewed = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Card {self.card_id} in {self.deck.name}"
+        return f"Card {self.CardID} in {self.DeckID.DeckName}"
 
 class CardProgress(models.Model):
     UserID = models.ForeignKey(User, on_delete=models.CASCADE, related_name='decks')
-    CardID = models.ForeignKey(Deck, on_delete=models.CASCADE, related_name='cards')
+    CardID = models.ForeignKey(Flashcard, on_delete=models.CASCADE, related_name='cards')
     difficulty_choices = [
         ('Easy', 'Easy'),
         ('Medium', 'Medium'),
@@ -73,7 +73,7 @@ class CardProgress(models.Model):
     Mastered = models.BooleanField(default=False)
 
     class Meta:
-        unique_together = ('user', 'card') 
+        unique_together = ('UserID', 'CardID')
 
     def __str__(self):
-        return f"{self.user.username} progress on Card {self.card.card_id}"
+        return f"{self.UserID.username} progress on Card {self.CardID.CardID}"
