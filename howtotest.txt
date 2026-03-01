@@ -1,0 +1,5 @@
+open your environment
+
+
+if you havent installed the frameworks, then do this
+pip install -r requirements.txt
