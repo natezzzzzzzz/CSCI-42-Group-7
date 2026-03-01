@@ -1,20 +1,15 @@
-import { useEffect, useState } from 'react'
-import './App.css'
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import DeckPage from "./pages/DeckPage";
 
 function App() {
-  const [msg, setMsg] = useState("Loading...")
-
-  useEffect(() => {
-    fetch("http://127.0.0.1:8000/testapp/hello/")
-      .then(res => res.json())
-      .then(data => setMsg(data.message))
-      .catch(err => {
-        console.error(err)
-        setMsg("Error connecting to backend")
-      })
-  }, [])
-
-  return <h1>{msg}</h1>
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<DeckPage />} />
+      </Routes>
+    </Router>
+  );
 }
 
-export default App
+export default App;
