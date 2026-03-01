@@ -17,10 +17,9 @@ def deck_list(request):
 def create_deck_api(request):
     serializer = DeckSerializer(data=request.data)
     if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=201)
+        deck = serializer.save()  # save returns the instance
+        return Response(DeckSerializer(deck).data, status=201)  # serialize the saved deck
     return Response(serializer.errors, status=400)
-
 @api_view(['DELETE'])
 def delete_deck_api(request, deck_id):
     deck = Deck.objects.filter(DeckID=deck_id).first()
@@ -29,3 +28,19 @@ def delete_deck_api(request, deck_id):
     
     deck.delete()
     return Response({"message": "Deck deleted"}, status=200)
+
+@api_view(['PATCH'])
+def update_deck(request, deck_id):
+    deck = Deck.objects.filter(DeckID=deck_id).first()
+    if not deck:
+        return Response({"error": "Deck not found"}, status=404)
+
+    for key, value in request.data.items():
+        setattr(deck, key, value)
+    deck.save()
+    return Response({
+        "DeckID": deck.DeckID,
+        "DeckName": deck.DeckName,
+        "Category": deck.Category,
+        "Description": deck.Description
+    })
