@@ -1,27 +1,22 @@
-import { useEffect, useState } from 'react'
-// import AuthContext from "./context/AuthContext";
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import MainMenu from "./pages/MainMenu";
+import DeckPage from "./pages/DeckPage";
 import './styles/App.css';
 
 function App() {
-  const [page, setPage] = useState("login");
-
-  const renderPage = () => {
-    switch (page) {
-      case "login":
-        return <LoginPage setPage={setPage} />;
-      case "register":
-        return <RegisterPage setPage={setPage} />;
-      case "main":
-        return <MainMenu setPage={setPage} />;
-      default:
-        return <LoginPage setPage={setPage} />;
-    }
-  };
-
-  return <div>{renderPage()}</div>;
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/main" element={<MainMenu />} />
+        <Route path="/decks" element={<DeckPage />} />
+      </Routes>
+    </Router>
+  );
 }
 
-export default App
+export default App;

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NeuroDeck</title>
+
+</head>
+
+<body>
+
+<nav>
+    <a href="{% url 'deck_list' %}">Home</a>
+    
+</nav>
+
+<div class="container">
+    {% block content %}
+    {% endblock %}
+</div>
+
+</body>
+</html>
