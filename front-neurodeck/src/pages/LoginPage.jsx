@@ -4,18 +4,18 @@ import 'bulma/css/bulma.min.css';
 
 function LoginPage({ setPage }) {
   return (
-    <section className="hero is-fullheight" style={{ background: "var(--color-bg)" }}>
+    <section className="hero is-fullheight">
       <div className="hero-body">
         <div className="container">
           <div className="columns is-centered">
             <div className="column is-4">
-              <div className="box shadow-lg" style={{ background: "var(--color-surface)" }}>
+              <div className="box shadow-lg">
 
-                <h1 className="h4 has-text-centered mb-2" style={{ color: "var(--color-text)" }}>
+                <h1 className="h4 has-text-centered mb-2">
                   Welcome Back
                 </h1>
 
-                <p className="tagline has-text-centered mb-5" style={{ color: "var(--color-text-muted)" }}>
+                <p className="tagline has-text-centered mb-5">
                   Login to continue
                 </p>
 
@@ -35,7 +35,6 @@ function LoginPage({ setPage }) {
 
                 <button
                   className="button is-fullwidth mt-4"
-                  style={{ background: "var(--color-primary)", color: "white" }}
                   onClick={() => setPage("main")}
                 >
                   Login

@@ -4,14 +4,14 @@ import 'bulma/css/bulma.min.css';
 
 function MainMenu({ setPage }) {
   return (
-    <section className="section" style={{ background: "var(--color-bg)", minHeight: "100vh" }}>
+    <section className="section">
       <div className="container">
 
-        <div className="box shadow-md mb-5" style={{ background: "var(--color-surface)" }}>
-          <h1 className="h4 mb-1" style={{ color: "var(--color-text)" }}>
+        <div className="box shadow-md mb-5">
+          <h1 className="h4 mb-1">
             Main Menu
           </h1>
-          <p className="text-small" style={{ color: "var(--color-text-muted)" }}>
+          <p className="text-small">
             Welcome to your dashboard
           </p>
         </div>

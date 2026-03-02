@@ -8,6 +8,16 @@ Pillow
 # make sure to run:
 #  npm install 
 
+# run instructions
+# backend:
+# cd neurodeck
+# python manage.py runserver
+# p.s. dont forget migrations if you made changes in models
+
+# frontend:
+# cd front-neurodeck
+# npm run dev
+
 # for deployment later
 # gunicorn
 # python-dotenv
