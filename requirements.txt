@@ -1,0 +1,25 @@
+Django>=4.2
+djangorestframework
+djangorestframework-simplejwt
+django-cors-headers
+Pillow
+
+# for some frontend bugs
+# make sure to run:
+#  npm install 
+
+# run instructions
+# backend:
+# cd neurodeck
+# python manage.py runserver
+# p.s. dont forget migrations if you made changes in models
+
+# frontend:
+# cd front-neurodeck
+# npm run dev
+
+# for deployment later
+# gunicorn
+# python-dotenv
+# whitenoise
+# psycopg2-binary

@@ -1,20 +1,27 @@
 import { useEffect, useState } from 'react'
-import './App.css'
+// import AuthContext from "./context/AuthContext";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import MainMenu from "./pages/MainMenu";
+import './styles/App.css';
 
 function App() {
-  const [msg, setMsg] = useState("Loading...")
+  const [page, setPage] = useState("login");
 
-  useEffect(() => {
-    fetch("http://127.0.0.1:8000/testapp/hello/")
-      .then(res => res.json())
-      .then(data => setMsg(data.message))
-      .catch(err => {
-        console.error(err)
-        setMsg("Error connecting to backend")
-      })
-  }, [])
+  const renderPage = () => {
+    switch (page) {
+      case "login":
+        return <LoginPage setPage={setPage} />;
+      case "register":
+        return <RegisterPage setPage={setPage} />;
+      case "main":
+        return <MainMenu setPage={setPage} />;
+      default:
+        return <LoginPage setPage={setPage} />;
+    }
+  };
 
-  return <h1>{msg}</h1>
+  return <div>{renderPage()}</div>;
 }
 
 export default App
