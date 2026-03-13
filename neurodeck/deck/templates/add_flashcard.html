@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>Add Flashcard to {{ deck.DeckName }}</h1>
+
+<form method="POST">
+    {% csrf_token %}
+
+    <label>Question</label><br>
+    <input type="text" name="Question" required><br><br>
+
+    <label>Answer</label><br>
+    <input type="text" name="Answer"><br><br>
+
+    <button type="submit">Add Flashcard</button>
+</form>
+
+{% endblock %}

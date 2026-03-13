@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>{{ deck.DeckName }}</h1>
+
+<h2>Add Flashcard</h2>
+<form method="POST" action="{% url 'deck_detail' deck.DeckID %}">
+    {% csrf_token %}
+
+    <input type="text" name="Question" placeholder="Question" required>
+    <br>
+
+    <textarea name="Answer" placeholder="Answer"></textarea>
+    <br>
+
+    <button type="submit">Add Flashcard</button>
+</form>
+
+<hr>
+
+<h2>Flashcards</h2>
+<ul>
+    {% for card in cards %}
+        <li>
+            <strong>{{ card.Question }}</strong><br>
+            {{ card.Answer }}
+        </li>
+    {% empty %}
+        <li>No cards yet.</li>
+    {% endfor %}
+</ul>
+
+{% endblock %}
