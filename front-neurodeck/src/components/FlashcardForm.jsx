@@ -1,33 +1,34 @@
 import React, { useState } from "react";
+import { createFlashcard } from "../api/flashcardApi";
 
 export default function FlashcardForm({ deckId, onFlashcardCreated }) {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const newCard = {
-      CardID: Date.now(),
       DeckID: deckId,
       Question: question,
       Answer: answer
     };
 
-    onFlashcardCreated(newCard);
+    const savedCard = await createFlashcard(newCard);
+
+    onFlashcardCreated(savedCard);
 
     setQuestion("");
     setAnswer("");
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ marginBottom: "10px" }}>
+    <form onSubmit={handleSubmit}>
       <input
         type="text"
         placeholder="Question"
         value={question}
         onChange={(e) => setQuestion(e.target.value)}
-        style={{ marginRight: "10px" }}
       />
 
       <input
@@ -35,7 +36,6 @@ export default function FlashcardForm({ deckId, onFlashcardCreated }) {
         placeholder="Answer"
         value={answer}
         onChange={(e) => setAnswer(e.target.value)}
-        style={{ marginRight: "10px" }}
       />
 
       <button type="submit">Add</button>
