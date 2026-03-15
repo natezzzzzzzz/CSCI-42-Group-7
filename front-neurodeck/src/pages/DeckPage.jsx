@@ -73,8 +73,10 @@ import FlashcardForm from "../components/FlashcardForm";
 import FlashcardList from "../components/FlashcardList";
 import { fetchDecks } from "../api/deckApi";
 import { fetchFlashcards } from "../api/flashcardApi";
+import { useNavigate } from "react-router-dom";
 
 export default function DeckPage() {
+  const navigate = useNavigate();
   const [decks, setDecks] = useState([]);
   const [flashcards, setFlashcards] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
@@ -186,6 +188,12 @@ export default function DeckPage() {
             <div>
               <button onClick={() => toggleDeck(deck.DeckID)}>
                 {expandedDecks[deck.DeckID] ? "Hide Flashcards" : "Show Flashcards"}
+              </button>
+              <button
+                onClick={() => navigate(`/decks/${deck.DeckID}/study`)}
+                style={{ marginLeft: "10px" }}
+              >
+              Study
               </button>
               <button
                 onClick={() => handleDeckDelete(deck.DeckID)}
