@@ -1,78 +1,10 @@
-// import React, { useEffect, useState } from "react";
-// import DeckForm from "../components/DeckForm";
-// import DeckList from "../components/DeckList";
-// import { fetchDecks } from "../api/deckApi";
-
-// export default function DeckPage() {
-//   const [decks, setDecks] = useState([]);
-//   const [searchQuery, setSearchQuery] = useState("");
-//   const [filterCategory, setFilterCategory] = useState("");
-
-//   // initial load
-//   useEffect(() => {
-//     const load = async () => {
-//       const data = await fetchDecks();
-//       setDecks(data);
-//     };
-//     load();
-//   }, []);
-
-//   // called by DeckForm when a new deck is created
-//   const handleDeckCreated = (newDeck) => {
-//     setDecks(prev => [newDeck, ...prev]); // prepend new deck
-//   };
-
-//   const handleDeckUpdate = (updatedDeck) => {
-//     setDecks(prev => prev.map(d => d.DeckID === updatedDeck.DeckID ? updatedDeck : d));
-//   };
-
-//   const handleDeckDelete = (deckId) => {
-//     setDecks(prev => prev.filter(d => d.DeckID !== deckId));
-//   };
-
-//   return (
-//     <div>
-//       <h2>My Decks</h2>
-
-//       <DeckForm onDeckCreated={handleDeckCreated} />
-
-//       {/* Search / filter inputs */}
-//       <div style={{ marginBottom: "20px" }}>
-//         <input
-//           type="text"
-//           placeholder="Search by deck name..."
-//           value={searchQuery}
-//           onChange={(e) => setSearchQuery(e.target.value)}
-//           style={{ marginRight: "10px" }}
-//         />
-//         <input
-//           type="text"
-//           placeholder="Filter by category..."
-//           value={filterCategory}
-//           onChange={(e) => setFilterCategory(e.target.value)}
-//         />
-//       </div>
-
-//       <DeckList
-//         decks={decks}
-//         searchQuery={searchQuery}
-//         filterCategory={filterCategory}
-//         onUpdate={handleDeckUpdate}
-//         onDelete={handleDeckDelete}
-//       />
-//     </div>
-//   );
-// }
-
-
-
 import React, { useEffect, useState } from "react";
 import DeckForm from "../components/DeckForm";
 import DeckList from "../components/DeckList";
 import FlashcardForm from "../components/FlashcardForm";
 import FlashcardList from "../components/FlashcardList";
 import { fetchDecks } from "../api/deckApi";
-import { fetchFlashcards } from "../api/flashcardApi";
+import { fetchFlashcards, deleteFlashcard, updateFlashcard } from "../api/flashcardApi";
 import { useNavigate } from "react-router-dom";
 
 export default function DeckPage() {
@@ -118,14 +50,25 @@ export default function DeckPage() {
     }));
   };
 
-  const handleFlashcardUpdate = (deckId, updatedCard) => {
-    setFlashcards(prev => ({
-      ...prev,
-      [deckId]: prev[deckId].map(c => c.CardID === updatedCard.CardID ? updatedCard : c)
-    }));
+  const handleFlashcardUpdate = async (deckId, updatedCard) => {
+    try {
+      const savedCard = await updateFlashcard(updatedCard.CardID, {
+        Question: updatedCard.Question,
+        Answer: updatedCard.Answer
+      });
+      setFlashcards(prev => ({
+        ...prev,
+        [deckId]: prev[deckId].map(c => c.CardID === savedCard.CardID ? savedCard : c)
+      }));
+    } catch (error) {
+      console.error("Failed to update flashcard:", error);
+      alert("Failed to update flashcard. Please try again.");
+      // Optionally show an error message to the user
+    }
   };
 
-  const handleFlashcardDelete = (deckId, cardId) => {
+  const handleFlashcardDelete = async (deckId, cardId) => {
+    await deleteFlashcard(cardId);
     setFlashcards(prev => ({
       ...prev,
       [deckId]: prev[deckId].filter(c => c.CardID !== cardId)
@@ -211,6 +154,7 @@ export default function DeckPage() {
                 deckId={deck.DeckID}
                 onFlashcardCreated={(newCard) => handleFlashcardCreated(deck.DeckID, newCard)}
               />
+              <br/>
               <FlashcardList
                 flashcards={flashcards[deck.DeckID] || []}
                 onUpdate={(updatedCard) => handleFlashcardUpdate(deck.DeckID, updatedCard)}
