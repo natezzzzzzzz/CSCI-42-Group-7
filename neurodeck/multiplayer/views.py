@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from deck.models import Deck, Flashcard
+from deck.serializers import DeckSerializer
 from .models import MultiplayerRoom, RoomParticipant
 from .serializers import AnswerSerializer, MultiplayerRoomSerializer
 
@@ -93,6 +94,8 @@ class StartGameView(APIView):
     """
     POST /multiplayer/<room_code>/start/
     Host-only. Transitions room from 'waiting' → 'playing'.
+    Accepts optional body: { rounds } — number of rounds to play (capped at deck size).
+    Initialises a deterministic shuffled card order so all players see the same cards.
     """
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -106,7 +109,52 @@ class StartGameView(APIView):
         if room.Status != "waiting":
             return Response({"detail": f"Room is already '{room.Status}'."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Build a shuffled card order
+        card_ids = list(room.Deck.cards.values_list("CardID", flat=True))
+        if not card_ids:
+            return Response({"detail": "Cannot start — the deck has no cards."}, status=status.HTTP_400_BAD_REQUEST)
+
+        random.shuffle(card_ids)
+
+        # Resolve requested rounds (capped at deck size)
+        requested_rounds = request.data.get("rounds", len(card_ids))
+        try:
+            requested_rounds = int(requested_rounds)
+        except (ValueError, TypeError):
+            requested_rounds = len(card_ids)
+        total_rounds = min(max(1, requested_rounds), len(card_ids))
+
         room.Status = "playing"
+        room.CurrentCardIndex = 0
+        room.TotalRounds = total_rounds
+        room.set_card_order(card_ids)
+        room.save()
+
+        serializer = MultiplayerRoomSerializer(room)
+        return Response(serializer.data)
+
+
+class EndGameView(APIView):
+    """
+    POST /multiplayer/<room_code>/end/
+    Host-only. Transitions room from 'playing' → 'finished'.
+    """
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, room_code):
+        room = get_object_or_404(MultiplayerRoom, RoomCode=room_code.upper())
+
+        if room.Host != request.user:
+            return Response({"detail": "Only the host can end the game."}, status=status.HTTP_403_FORBIDDEN)
+
+        if room.Status != "playing":
+            return Response(
+                {"detail": f"Cannot end — room is '{room.Status}', not 'playing'."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        room.Status = "finished"
         room.save()
 
         serializer = MultiplayerRoomSerializer(room)
@@ -116,7 +164,8 @@ class StartGameView(APIView):
 class GetFlashcardView(APIView):
     """
     GET /multiplayer/<room_code>/flashcard/
-    Returns a random card from the room's deck.
+    Returns the current card in the deterministic shuffled sequence.
+    Advances the index each call. When all rounds are exhausted, auto-finishes the game.
     The Answer field is intentionally omitted — grading happens server-side.
     """
     authentication_classes = [JWTAuthentication]
@@ -131,14 +180,33 @@ class GetFlashcardView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        flashcards = list(room.Deck.cards.all())
-        if not flashcards:
+        card_order = room.get_card_order()
+        if not card_order:
             return Response({"detail": "No cards in this deck."}, status=status.HTTP_404_NOT_FOUND)
 
-        card = random.choice(flashcards)
+        idx = room.CurrentCardIndex
+
+        # All rounds completed — auto-finish
+        if idx >= room.TotalRounds:
+            room.Status = "finished"
+            room.save()
+            return Response(
+                {"detail": "All rounds complete.", "game_over": True},
+                status=status.HTTP_200_OK,
+            )
+
+        card_id = card_order[idx]
+        card = get_object_or_404(Flashcard, pk=card_id)
+
+        # Advance index for the next call
+        room.CurrentCardIndex = idx + 1
+        room.save(update_fields=["CurrentCardIndex"])
+
         return Response({
             "CardID": card.CardID,
             "Question": card.Question,
+            "current_round": idx + 1,
+            "total_rounds": room.TotalRounds,
             # Answer is intentionally hidden — evaluated server-side in SubmitAnswerView
         })
 
@@ -176,3 +244,20 @@ class SubmitAnswerView(APIView):
             "correct_answer": card.Answer,
             "score": participant.Score,
         })
+
+
+class ListDecksForRoomView(APIView):
+    """
+    GET /multiplayer/decks/
+    Returns a lightweight list of the authenticated user's decks for the room-creation picker.
+    """
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        decks = Deck.objects.filter(UserID=request.user).order_by("DeckName")
+        data = [
+            {"DeckID": d.DeckID, "DeckName": d.DeckName, "card_count": d.cards.count()}
+            for d in decks
+        ]
+        return Response(data)

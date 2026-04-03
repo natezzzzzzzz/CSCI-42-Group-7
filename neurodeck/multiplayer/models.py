@@ -1,3 +1,4 @@
+import json
 from django.db import models
 
 
@@ -25,6 +26,23 @@ class MultiplayerRoom(models.Model):
     RoomCode = models.CharField(max_length=10, unique=True)
     Status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="waiting")
     CreatedAt = models.DateTimeField(auto_now_add=True)
+
+    # Round tracking
+    CurrentCardIndex = models.IntegerField(default=0)
+    TotalRounds = models.IntegerField(default=10)
+    # JSON-stored list of card PKs in shuffled order, set when game starts
+    CardOrder = models.TextField(default="[]")
+
+    def get_card_order(self):
+        """Return the card order as a Python list."""
+        try:
+            return json.loads(self.CardOrder)
+        except (json.JSONDecodeError, TypeError):
+            return []
+
+    def set_card_order(self, card_ids):
+        """Store a list of card PKs as JSON."""
+        self.CardOrder = json.dumps(card_ids)
 
     def save(self, *args, **kwargs):
         if not self.RoomID:

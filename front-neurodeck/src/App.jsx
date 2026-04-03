@@ -4,7 +4,7 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import MainMenu from "./pages/MainMenu";
 import DeckPage from "./pages/DeckPage";
-import MultiplayerPage from "./pages/MultiplayerPage"; // <- fixed import
+import MultiplayerPage from "./pages/MultiplayerPage";
 import './styles/App.css';
 
 function App() {

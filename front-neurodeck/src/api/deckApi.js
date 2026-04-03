@@ -85,3 +85,72 @@ export async function deleteCard(deckId, cardId) {
   });
   return handleResponse(res);
 }
+
+// ─── Multiplayer API ──────────────────────────────────────────────────────────
+
+export async function fetchMyDecks() {
+  const res = await fetch(`${BASE_URL}/multiplayer/decks/`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(res);
+}
+
+export async function createRoom(deckId) {
+  const res = await fetch(`${BASE_URL}/multiplayer/create-room/`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ deck_id: deckId }),
+  });
+  return handleResponse(res);
+}
+
+export async function joinRoom(roomCode) {
+  const res = await fetch(`${BASE_URL}/multiplayer/join-room/`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ room_code: roomCode }),
+  });
+  return handleResponse(res);
+}
+
+export async function getRoomDetail(roomCode) {
+  const res = await fetch(`${BASE_URL}/multiplayer/${roomCode}/`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(res);
+}
+
+export async function startGame(roomCode, rounds) {
+  const body = rounds != null ? JSON.stringify({ rounds }) : JSON.stringify({});
+  const res = await fetch(`${BASE_URL}/multiplayer/${roomCode}/start/`, {
+    method: "POST",
+    headers: authHeaders(),
+    body,
+  });
+  return handleResponse(res);
+}
+
+export async function endGame(roomCode) {
+  const res = await fetch(`${BASE_URL}/multiplayer/${roomCode}/end/`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({}),
+  });
+  return handleResponse(res);
+}
+
+export async function getFlashcard(roomCode) {
+  const res = await fetch(`${BASE_URL}/multiplayer/${roomCode}/flashcard/`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(res);
+}
+
+export async function submitAnswer(roomCode, cardId, answer) {
+  const res = await fetch(`${BASE_URL}/multiplayer/submit-answer/`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ room_code: roomCode, card_id: cardId, answer }),
+  });
+  return handleResponse(res);
+}

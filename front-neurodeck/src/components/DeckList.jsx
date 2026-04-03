@@ -3,7 +3,6 @@ import DeckItem from "./DeckItem";
 
 export default function DeckList({ decks, searchQuery, filterCategory, onUpdate, onDelete }) {
   const filteredDecks = decks.filter(deck => {
-    // Null guards: if DeckName or Category is undefined/null, treat as empty string
     const name = deck.DeckName?.toLowerCase() ?? "";
     const category = deck.Category?.toLowerCase() ?? "";
 

@@ -1,113 +1,95 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import {
+  createRoom as apiCreateRoom,
+  joinRoom as apiJoinRoom,
+  getRoomDetail,
+  startGame as apiStartGame,
+  endGame as apiEndGame,
+  getFlashcard as apiGetFlashcard,
+  submitAnswer as apiSubmitAnswer,
+  fetchMyDecks,
+} from '../api/deckApi';
 
-const API = 'http://localhost:8000/multiplayer';
-const TOKEN_URL = 'http://localhost:8000/api/token/refresh/';
 
-// ─── Auth helpers ─────────────────────────────────────────────────────────────
-
-const getToken = () => localStorage.getItem('access');
-
-const authHeaders = () => ({
-  headers: { Authorization: `Bearer ${getToken()}` },
-});
-
-const getUserIdFromToken = () => {
+const getUsernameFromToken = () => {
   try {
-    const token = getToken();
+    const token = localStorage.getItem('access');
     if (!token) return null;
     const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.user_id ?? null;
+    return payload.username ?? null;
   } catch {
     return null;
   }
 };
 
-/**
- * Attempt a silent token refresh.
- * Returns true if a new access token was stored, false otherwise.
- */
-const tryRefresh = async () => {
-  const refresh = localStorage.getItem('refresh');
-  if (!refresh) return false;
-  try {
-    const res = await axios.post(TOKEN_URL, { refresh });
-    localStorage.setItem('access', res.data.access);
-    return true;
-  } catch {
-    return false;
-  }
-};
+const MEDALS = ['🥇', '🥈', '🥉'];
 
-/**
- * Wraps any axios call.  On a 401 it tries one token refresh then retries.
- * If the refresh also fails the user is redirected to login.
- *
- * @param {() => Promise} requestFn  — zero-argument function that calls axios
- * @param {Function} onAuthFail      — called when refresh fails (e.g. navigate to '/')
- */
-const withAuth = async (requestFn, onAuthFail) => {
-  try {
-    return await requestFn();
-  } catch (err) {
-    if (err.response?.status !== 401) throw err;
 
-    const refreshed = await tryRefresh();
-    if (!refreshed) {
-      localStorage.removeItem('access');
-      localStorage.removeItem('refresh');
-      onAuthFail?.();
-      throw err;
-    }
-
-    // Retry once with the new token
-    return await requestFn();
-  }
-};
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function Scoreboard({ participants, currentUserId }) {
+function Scoreboard({ participants, currentUsername }) {
   const sorted = [...participants].sort((a, b) => b.Score - a.Score);
   return (
-    <div className="box">
-      <p className="has-text-weight-bold mb-3">Scoreboard</p>
+    <div className="mp-scoreboard">
+      <p className="mp-scoreboard-title">Scoreboard</p>
       {sorted.length === 0 && (
-        <p className="has-text-grey">No participants yet.</p>
+        <p className="mp-empty">No participants yet.</p>
       )}
       {sorted.map((p, i) => (
-        <div key={p.user_id} className="is-flex is-justify-content-space-between mb-2">
-          <span>
-            {i === 0 && <span className="mr-1">🥇</span>}
-            <span className={p.user_id === currentUserId ? 'has-text-weight-bold' : ''}>
-              {p.username}
-              {p.user_id === currentUserId && ' (you)'}
-            </span>
+        <div key={p.user_id} className={`mp-scoreboard-row ${p.username === currentUsername ? 'is-me' : ''}`}>
+          <span className="mp-scoreboard-rank">
+            {MEDALS[i] ?? `#${i + 1}`}
           </span>
-          <span className="tag is-primary">{p.Score} pts</span>
+          <span className="mp-scoreboard-name">
+            {p.username}
+            {p.username === currentUsername && <span className="mp-you-badge">you</span>}
+          </span>
+          <span className="mp-scoreboard-pts">{p.Score} pts</span>
         </div>
       ))}
     </div>
   );
 }
 
-function FlashcardPanel({ card, onSubmit, onSkip, isLoading }) {
+function ProgressBar({ current, total }) {
+  const pct = total > 0 ? Math.min((current / total) * 100, 100) : 0;
+  return (
+    <div className="mp-progress-bar">
+      <div className="mp-progress-track">
+        <div className="mp-progress-fill" style={{ width: `${pct}%` }} />
+      </div>
+      <span className="mp-progress-label">Card {current} / {total}</span>
+    </div>
+  );
+}
+
+function ScorePop({ show }) {
+  return show ? <div className="mp-score-pop">+1</div> : null;
+}
+
+function FlashcardPanel({ card, onSubmit, onNext, isLoading, currentRound, totalRounds }) {
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState(null);
+  const [showPop, setShowPop] = useState(false);
+  const inputRef = useRef(null);
+
+  // Reset state whenever a new card arrives
+  useEffect(() => {
+    setAnswer('');
+    setFeedback(null);
+    setShowPop(false);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, [card?.CardID]);
 
   const handleSubmit = async () => {
     if (!answer.trim()) return;
     const result = await onSubmit(answer.trim());
     if (result) {
       setFeedback(result);
-      setAnswer('');
+      if (result.is_correct) {
+        setShowPop(true);
+        setTimeout(() => setShowPop(false), 1200);
+      }
     }
-  };
-
-  const handleNext = () => {
-    setFeedback(null);
-    onSkip();
   };
 
   const handleKeyDown = (e) => {
@@ -116,377 +98,445 @@ function FlashcardPanel({ card, onSubmit, onSkip, isLoading }) {
 
   if (!card) {
     return (
-      <div className="box has-text-centered">
-        <button className="button is-primary" onClick={onSkip} disabled={isLoading}>
-          {isLoading ? 'Loading…' : 'Get First Card'}
+      <div className="mp-card mp-card-empty">
+        <button className="mp-btn mp-btn-primary" onClick={onNext} disabled={isLoading} id="mp-get-card-btn">
+          {isLoading ? <span className="mp-spinner" /> : 'Get First Card →'}
         </button>
       </div>
     );
   }
 
   return (
-    <div className="box">
-      <div className="notification is-dark mb-4">
-        <p className="has-text-weight-bold mb-1 text-small has-text-grey">Question</p>
-        <p className="h4">{card.Question}</p>
+    <div className="mp-card mp-card-enter">
+      <ScorePop show={showPop} />
+
+      {totalRounds > 0 && (
+        <ProgressBar current={currentRound ?? 0} total={totalRounds} />
+      )}
+
+      <div className="mp-question-box">
+        <span className="mp-question-label">Question</span>
+        <p className="mp-question-text">{card.Question}</p>
       </div>
 
       {feedback ? (
-        <div>
-          <div className={`notification ${feedback.is_correct ? 'is-success' : 'is-danger'} mb-3`}>
+        <div className={`mp-feedback ${feedback.is_correct ? 'mp-correct' : 'mp-incorrect'}`}>
+          <span className="mp-feedback-icon">{feedback.is_correct ? '✅' : '❌'}</span>
+          <span>
             {feedback.is_correct
-              ? '✅ Correct!'
-              : `❌ Incorrect — correct answer: ${feedback.correct_answer}`}
-          </div>
-          <button className="button is-primary is-fullwidth" onClick={handleNext}>
-            Next Card
-          </button>
+              ? 'Correct!'
+              : `Incorrect — answer: ${feedback.correct_answer}`}
+          </span>
         </div>
       ) : (
-        <div>
-          <div className="field">
-            <div className="control">
-              <input
-                className="input"
-                type="text"
-                placeholder="Your answer…"
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                onKeyDown={handleKeyDown}
-                autoFocus
-              />
-            </div>
-          </div>
-          <div className="buttons">
+        <div className="mp-answer-area">
+          <input
+            ref={inputRef}
+            id="mp-answer-input"
+            className="mp-input"
+            type="text"
+            placeholder="Type your answer…"
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            onKeyDown={handleKeyDown}
+            autoFocus
+          />
+          <div className="mp-btn-row">
             <button
-              className="button is-primary is-flex-grow-1"
+              id="mp-submit-btn"
+              className="mp-btn mp-btn-primary"
               onClick={handleSubmit}
               disabled={!answer.trim() || isLoading}
             >
               Submit
             </button>
-            <button className="button is-light" onClick={handleNext} disabled={isLoading}>
+            <button
+              id="mp-skip-btn"
+              className="mp-btn mp-btn-ghost"
+              onClick={onNext}
+              disabled={isLoading}
+            >
               Skip
             </button>
           </div>
         </div>
       )}
+
+      {feedback && (
+        <button
+          id="mp-next-btn"
+          className="mp-btn mp-btn-primary mp-btn-full"
+          onClick={onNext}
+          disabled={isLoading}
+        >
+          {isLoading ? <span className="mp-spinner" /> : 'Next Card →'}
+        </button>
+      )}
     </div>
   );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
 
-export default function MultiplayerRoom({ deckId, onLeave }) {
+export default function MultiplayerRoom({ onLeave }) {
   const navigate = useNavigate();
-  const userId = getUserIdFromToken();
+  const currentUsername = getUsernameFromToken();
 
-  const redirectToLogin = useCallback(() => navigate('/'), [navigate]);
-
-  const [phase, setPhase] = useState('entry');
+  const [phase, setPhase] = useState('entry');  // entry | lobby | playing | finished
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const [joinCodeInput, setJoinCodeInput] = useState('');
-  const [createDeckId, setCreateDeckId] = useState(deckId ?? '');
+  const [myDecks, setMyDecks] = useState([]);
+  const [selectedDeckId, setSelectedDeckId] = useState('');
+  const [selectedRounds, setSelectedRounds] = useState(10);
+  const [decksLoading, setDecksLoading] = useState(false);
 
   const [room, setRoom] = useState(null);
   const [card, setCard] = useState(null);
+  const [currentRound, setCurrentRound] = useState(0);
+  const [streak, setStreak] = useState(0);
 
   const pollRef = useRef(null);
-
-  // Keep a ref to room so polling closure always sees the latest value
   const roomRef = useRef(null);
+
   useEffect(() => { roomRef.current = room; }, [room]);
+  useEffect(() => () => clearInterval(pollRef.current), []);
+
+  // Load user's decks on mount for the picker
+  useEffect(() => {
+    setDecksLoading(true);
+    fetchMyDecks()
+      .then((data) => {
+        setMyDecks(data);
+        if (data.length > 0) setSelectedDeckId(data[0].DeckID);
+      })
+      .catch(() => {/* silently ignore — user may not be the host */ })
+      .finally(() => setDecksLoading(false));
+  }, []);
 
   const clearError = () => setError('');
 
   const applyRoomUpdate = useCallback((data) => {
     setRoom(data);
     roomRef.current = data;
-    if (data.Status === 'playing') setPhase('playing');
+    if (data.Status === 'playing' && phase !== 'playing') setPhase('playing');
     if (data.Status === 'finished') setPhase('finished');
-  }, []);
+  }, [phase]);
 
-  // ── Polling ────────────────────────────────────────────────────────────────
 
   const startPolling = useCallback((roomCode) => {
     if (pollRef.current) clearInterval(pollRef.current);
     pollRef.current = setInterval(async () => {
       try {
-        const res = await withAuth(
-          () => axios.get(`${API}/${roomCode}/`, authHeaders()),
-          redirectToLogin,
-        );
-        applyRoomUpdate(res.data);
+        const data = await getRoomDetail(roomCode);
+        setRoom(data);
+        roomRef.current = data;
+        if (data.Status === 'playing') setPhase((prev) => prev === 'lobby' ? 'playing' : prev);
+        if (data.Status === 'finished') setPhase('finished');
       } catch {
         // Silently ignore transient polling errors
       }
     }, 3000);
-  }, [applyRoomUpdate, redirectToLogin]);
+  }, []);
 
-  useEffect(() => () => clearInterval(pollRef.current), []);
 
-  // ── Actions ────────────────────────────────────────────────────────────────
-
-  const createRoom = async () => {
-    if (!createDeckId) return setError('Please enter a Deck ID.');
+  const handleCreateRoom = async () => {
+    if (!selectedDeckId) return setError('Please select a deck.');
     clearError();
     setIsLoading(true);
     try {
-      const res = await withAuth(
-        () => axios.post(`${API}/create-room/`, { deck_id: createDeckId }, authHeaders()),
-        redirectToLogin,
-      );
-      applyRoomUpdate(res.data);
+      const data = await apiCreateRoom(selectedDeckId);
+      applyRoomUpdate(data);
       setPhase('lobby');
-      startPolling(res.data.RoomCode);
+      startPolling(data.RoomCode);
     } catch (e) {
-      if (e.response?.status !== 401) {
-        setError(e.response?.data?.detail ?? 'Failed to create room.');
-      }
+      setError(e.message ?? 'Failed to create room.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const joinRoom = async () => {
+  const handleJoinRoom = async () => {
     const code = joinCodeInput.trim().toUpperCase();
     if (!code) return setError('Please enter a room code.');
     clearError();
     setIsLoading(true);
     try {
-      const res = await withAuth(
-        () => axios.post(`${API}/join-room/`, { room_code: code }, authHeaders()),
-        redirectToLogin,
-      );
-      applyRoomUpdate(res.data);
+      const data = await apiJoinRoom(code);
+      applyRoomUpdate(data);
       setPhase('lobby');
       startPolling(code);
     } catch (e) {
-      if (e.response?.status !== 401) {
-        setError(e.response?.data?.detail ?? 'Room not found or already finished.');
-      }
+      setError(e.message ?? 'Room not found or already finished.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const startGame = async () => {
+  const handleStartGame = async () => {
     clearError();
+    setIsLoading(true);
     try {
-      const res = await withAuth(
-        () => axios.post(`${API}/${roomRef.current.RoomCode}/start/`, {}, authHeaders()),
-        redirectToLogin,
-      );
-      applyRoomUpdate(res.data);
+      const data = await apiStartGame(roomRef.current.RoomCode, selectedRounds);
+      applyRoomUpdate(data);
       setPhase('playing');
-      // Pass the room code directly so we don't rely on stale state
-      await fetchCard(res.data.RoomCode);
+      setCurrentRound(0);
+      await handleFetchCard(data.RoomCode);
     } catch (e) {
-      if (e.response?.status !== 401) {
-        setError(e.response?.data?.detail ?? 'Failed to start game.');
-      }
+      setError(e.message ?? 'Failed to start game.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const fetchCard = async (roomCode) => {
+  const handleEndGame = async () => {
+    clearError();
+    try {
+      const data = await apiEndGame(roomRef.current.RoomCode);
+      applyRoomUpdate(data);
+      setPhase('finished');
+    } catch (e) {
+      setError(e.message ?? 'Failed to end game.');
+    }
+  };
+
+  const handleFetchCard = async (roomCode) => {
     const code = roomCode ?? roomRef.current?.RoomCode;
     if (!code) return;
     setIsLoading(true);
     try {
-      const res = await withAuth(
-        () => axios.get(`${API}/${code}/flashcard/`, authHeaders()),
-        redirectToLogin,
-      );
-      setCard(res.data);
-    } catch (e) {
-      if (e.response?.status !== 401) {
-        setError(e.response?.data?.detail ?? 'Failed to fetch card.');
+      const data = await apiGetFlashcard(code);
+      if (data.game_over) {
+        setPhase('finished');
+        return;
       }
+      setCard(data);
+      setCurrentRound(data.current_round ?? 0);
+    } catch (e) {
+      setError(e.message ?? 'Failed to fetch card.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const submitAnswer = async (answer) => {
+  const handleSubmitAnswer = async (answer) => {
     try {
-      const res = await withAuth(
-        () => axios.post(
-          `${API}/submit-answer/`,
-          { room_code: roomRef.current.RoomCode, card_id: card.CardID, answer },
-          authHeaders(),
-        ),
-        redirectToLogin,
-      );
-      return res.data;
-    } catch (e) {
-      if (e.response?.status !== 401) {
-        setError(e.response?.data?.detail ?? 'Failed to submit answer.');
+      const data = await apiSubmitAnswer(roomRef.current.RoomCode, card.CardID, answer);
+      if (data.is_correct) {
+        setStreak((s) => s + 1);
+      } else {
+        setStreak(0);
       }
+      const roomData = await getRoomDetail(roomRef.current.RoomCode);
+      setRoom(roomData);
+      return data;
+    } catch (e) {
+      setError(e.message ?? 'Failed to submit answer.');
       return null;
     }
   };
 
-  // ── Render helpers ─────────────────────────────────────────────────────────
 
-  // Host field from the serializer is the raw FK integer (User PK)
-  const isHost = room?.Host === userId;
-  const myParticipant = room?.participants.find((p) => p.user_id === userId);
+  const isHost = room?.host_username === currentUsername;
+  const myParticipant = room?.participants?.find((p) => p.username === currentUsername);
 
-  // ── Phase: Entry ───────────────────────────────────────────────────────────
 
   if (phase === 'entry') {
     return (
-      <div className="columns is-centered mt-4">
-        <div className="column is-8-tablet is-6-desktop">
-          <div className="box mb-5">
-            <p className="h4 mb-4">Create a Room</p>
-            <div className="field">
-              <label className="label">Deck ID</label>
-              <div className="control">
-                <input
-                  className="input"
-                  type="text"
-                  placeholder="e.g. DECK-0001"
-                  value={createDeckId}
-                  onChange={(e) => setCreateDeckId(e.target.value)}
-                />
-              </div>
-            </div>
-            <button
-              className={`button is-primary is-fullwidth ${isLoading ? 'is-loading' : ''}`}
-              onClick={createRoom}
-              disabled={isLoading}
+      <div className="mp-entry">
+        {/* Create Room */}
+        <div className="mp-panel">
+          <h2 className="mp-panel-title">🚀 Create a Room</h2>
+
+          <label className="mp-label" htmlFor="mp-deck-select">Select Deck</label>
+          {decksLoading ? (
+            <div className="mp-skeleton" />
+          ) : myDecks.length === 0 ? (
+            <p className="mp-empty">No decks found. <a href="/decks">Create one first →</a></p>
+          ) : (
+            <select
+              id="mp-deck-select"
+              className="mp-select"
+              value={selectedDeckId}
+              onChange={(e) => setSelectedDeckId(e.target.value)}
             >
-              Create Room
-            </button>
-          </div>
+              {myDecks.map((d) => (
+                <option key={d.DeckID} value={d.DeckID}>
+                  {d.DeckName} ({d.card_count} cards)
+                </option>
+              ))}
+            </select>
+          )}
 
-          <div className="is-flex is-align-items-center mb-5">
-            <hr className="is-flex-grow-1" />
-            <span className="mx-3 has-text-grey text-small">or</span>
-            <hr className="is-flex-grow-1" />
-          </div>
+          <label className="mp-label" htmlFor="mp-rounds-select">Rounds</label>
+          <select
+            id="mp-rounds-select"
+            className="mp-select"
+            value={selectedRounds}
+            onChange={(e) => setSelectedRounds(Number(e.target.value))}
+          >
+            {[5, 10, 15, 20].map((n) => (
+              <option key={n} value={n}>{n} rounds</option>
+            ))}
+          </select>
 
-          <div className="box">
-            <p className="h4 mb-4">Join a Room</p>
-            <div className="field">
-              <label className="label">Room Code</label>
-              <div className="control">
-                <input
-                  className="input"
-                  type="text"
-                  placeholder="e.g. AB12CD"
-                  value={joinCodeInput}
-                  onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())}
-                  maxLength={10}
-                />
-              </div>
-            </div>
-            <button
-              className={`button is-link is-fullwidth ${isLoading ? 'is-loading' : ''}`}
-              onClick={joinRoom}
-              disabled={isLoading}
-            >
-              Join Room
-            </button>
-          </div>
-
-          {error && <p className="help is-danger mt-3">{error}</p>}
+          <button
+            id="mp-create-btn"
+            className={`mp-btn mp-btn-primary mp-btn-full ${isLoading ? 'mp-loading' : ''}`}
+            onClick={handleCreateRoom}
+            disabled={isLoading || myDecks.length === 0}
+          >
+            {isLoading ? <span className="mp-spinner" /> : 'Create Room'}
+          </button>
         </div>
+
+        <div className="mp-divider"><span>or</span></div>
+
+        {/* Join Room */}
+        <div className="mp-panel">
+          <h2 className="mp-panel-title">🔗 Join a Room</h2>
+          <label className="mp-label" htmlFor="mp-join-input">Room Code</label>
+          <input
+            id="mp-join-input"
+            className="mp-input"
+            type="text"
+            placeholder="e.g. AB12CD"
+            value={joinCodeInput}
+            onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())}
+            maxLength={10}
+          />
+          <button
+            id="mp-join-btn"
+            className={`mp-btn mp-btn-secondary mp-btn-full ${isLoading ? 'mp-loading' : ''}`}
+            onClick={handleJoinRoom}
+            disabled={isLoading}
+          >
+            {isLoading ? <span className="mp-spinner" /> : 'Join Room'}
+          </button>
+        </div>
+
+        {error && <p className="mp-error">{error}</p>}
       </div>
     );
   }
 
-  // ── Phase: Lobby ───────────────────────────────────────────────────────────
 
   if (phase === 'lobby') {
     return (
-      <div className="columns is-centered mt-4">
-        <div className="column is-8-tablet is-6-desktop">
-          <div className="box has-text-centered mb-5">
-            <p className="text-small has-text-grey mb-1">Room Code</p>
-            <p className="h4 tagline">{room?.RoomCode}</p>
-            <p className="text-small has-text-grey mt-2">
-              Share this code with friends to join
-            </p>
-          </div>
-
-          <Scoreboard participants={room?.participants ?? []} currentUserId={userId} />
-
-          <p className="text-small has-text-grey has-text-centered mb-3">
-            Waiting for host to start…
-          </p>
-
-          {isHost && (
-            <button className="button is-success is-fullwidth" onClick={startGame}>
-              Start Game
-            </button>
-          )}
-
-          {error && <p className="help is-danger mt-3">{error}</p>}
-
-          <button className="button is-ghost is-fullwidth mt-3" onClick={onLeave}>
-            Leave Room
-          </button>
+      <div className="mp-lobby">
+        <div className="mp-panel has-text-centered">
+          <p className="mp-room-code-label">Room Code</p>
+          <p className="mp-room-code" id="mp-room-code-display">{room?.RoomCode}</p>
+          <p className="mp-room-hint">Share this code with friends to join</p>
         </div>
+
+        <Scoreboard participants={room?.participants ?? []} currentUsername={currentUsername} />
+
+        <p className="mp-waiting-text">⏳ Waiting for host to start…</p>
+
+        {isHost && (
+          <div className="mp-host-controls">
+            <label className="mp-label" htmlFor="mp-lobby-rounds">Rounds</label>
+            <select
+              id="mp-lobby-rounds"
+              className="mp-select"
+              value={selectedRounds}
+              onChange={(e) => setSelectedRounds(Number(e.target.value))}
+            >
+              {[5, 10, 15, 20].map((n) => (
+                <option key={n} value={n}>{n} rounds</option>
+              ))}
+            </select>
+            <button
+              id="mp-start-btn"
+              className="mp-btn mp-btn-success mp-btn-full"
+              onClick={handleStartGame}
+              disabled={isLoading}
+            >
+              {isLoading ? <span className="mp-spinner" /> : '▶ Start Game'}
+            </button>
+          </div>
+        )}
+
+        {error && <p className="mp-error">{error}</p>}
+
+        <button id="mp-leave-lobby-btn" className="mp-btn mp-btn-ghost mp-btn-full" onClick={onLeave}>
+          Leave Room
+        </button>
       </div>
     );
   }
 
-  // ── Phase: Playing ─────────────────────────────────────────────────────────
-
   if (phase === 'playing') {
     return (
-      <div className="columns mt-4">
-        <div className="column is-7">
-          <div className="box mb-4">
-            <div className="is-flex is-justify-content-space-between is-align-items-center">
-              <span className="text-small has-text-grey">Room: <strong>{room?.RoomCode}</strong></span>
-              <span className="tag is-primary">
-                My score: {myParticipant?.Score ?? 0}
-              </span>
+      <div className="mp-playing">
+        {/* Left: card area */}
+        <div className="mp-play-main">
+          <div className="mp-play-header">
+            <div className="mp-room-tag">Room: <strong>{room?.RoomCode}</strong></div>
+            <div className="mp-score-tag">
+              Score: <strong>{myParticipant?.Score ?? 0}</strong>
             </div>
+            {streak >= 2 && (
+              <div className="mp-streak">🔥 {streak} streak</div>
+            )}
           </div>
 
           <FlashcardPanel
             card={card}
-            onSubmit={submitAnswer}
-            onSkip={() => fetchCard()}
+            onSubmit={handleSubmitAnswer}
+            onNext={() => handleFetchCard()}
             isLoading={isLoading}
+            currentRound={currentRound}
+            totalRounds={room?.TotalRounds ?? 0}
           />
 
-          {error && <p className="help is-danger">{error}</p>}
+          {isHost && (
+            <button id="mp-end-btn" className="mp-btn mp-btn-danger mp-btn-full" onClick={handleEndGame}>
+              ⏹ End Game
+            </button>
+          )}
+
+          {error && <p className="mp-error">{error}</p>}
         </div>
 
-        <div className="column is-5">
-          <Scoreboard participants={room?.participants ?? []} currentUserId={userId} />
+        {/* Right: scoreboard */}
+        <div className="mp-play-sidebar">
+          <Scoreboard participants={room?.participants ?? []} currentUserId={currentUsername} />
         </div>
       </div>
     );
   }
 
-  // ── Phase: Finished ────────────────────────────────────────────────────────
 
   if (phase === 'finished') {
-    const winner = [...(room?.participants ?? [])].sort((a, b) => b.Score - a.Score)[0];
+    const sorted = [...(room?.participants ?? [])].sort((a, b) => b.Score - a.Score);
+    const winner = sorted[0];
+    const isWinner = winner?.user_id === currentUsername;
+
     return (
-      <div className="columns is-centered mt-4">
-        <div className="column is-8-tablet is-6-desktop has-text-centered">
-          <div className="box mb-5">
-            <p className="h4 mb-2">Game Over!</p>
-            {winner && (
-              <p className="tagline">
-                🏆 {winner.username} wins with {winner.Score} pts
-              </p>
-            )}
-          </div>
-          <Scoreboard participants={room?.participants ?? []} currentUserId={userId} />
-          <button className="button is-primary is-fullwidth mt-4" onClick={onLeave}>
-            Back to Menu
-          </button>
+      <div className="mp-finished">
+        <div className="mp-winner-banner">
+          <div className="mp-winner-trophy">{isWinner ? '🏆' : '🎉'}</div>
+          <h2 className="mp-winner-title">
+            {isWinner ? 'You Win!' : `${winner?.username ?? '?'} Wins!`}
+          </h2>
+          {winner && (
+            <p className="mp-winner-score">
+              {winner.username} — {winner.Score} pts
+            </p>
+          )}
         </div>
+
+        <Scoreboard participants={room?.participants ?? []} currentUserId={currentUsername} />
+
+        <button
+          id="mp-back-to-menu-btn"
+          className="mp-btn mp-btn-primary mp-btn-full"
+          onClick={onLeave}
+        >
+          Back to Menu
+        </button>
       </div>
     );
   }

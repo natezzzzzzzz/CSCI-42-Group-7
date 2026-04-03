@@ -23,6 +23,7 @@ class MultiplayerRoomSerializer(serializers.ModelSerializer):
             "RoomID", "RoomCode", "Status",
             "Deck", "deck_name",
             "Host", "host_username",
+            "CurrentCardIndex", "TotalRounds",
             "participants",
         ]
 
@@ -30,9 +31,9 @@ class MultiplayerRoomSerializer(serializers.ModelSerializer):
 class AnswerSerializer(serializers.Serializer):
     """
     room_code  — identifies which room the answer belongs to (avoids ambiguous deck lookup)
-    card_id    — CharField because Flashcard PKs are strings like "CARD-0001"
+    card_id    — IntegerField because Flashcard.CardID is an AutoField (integer PK)
     answer     — the user's typed answer
     """
     room_code = serializers.CharField(max_length=10)
-    card_id = serializers.CharField(max_length=20)
+    card_id = serializers.IntegerField()
     answer = serializers.CharField(max_length=255)

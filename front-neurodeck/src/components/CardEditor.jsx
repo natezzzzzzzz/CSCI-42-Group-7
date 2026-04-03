@@ -1,4 +1,3 @@
-// src/components/CardEditor.jsx
 import React, { useState, useEffect } from "react";
 import { fetchCards, createCard, updateCard, deleteCard } from "../api/deckApi";
 
@@ -8,12 +7,10 @@ export default function CardEditor({ deckId }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Add form state
   const [newQuestion, setNewQuestion] = useState("");
   const [newAnswer, setNewAnswer] = useState("");
   const [addError, setAddError] = useState("");
 
-  // Which card is currently being edited
   const [editingId, setEditingId] = useState(null);
   const [editQuestion, setEditQuestion] = useState("");
   const [editAnswer, setEditAnswer] = useState("");
