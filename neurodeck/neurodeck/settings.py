@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'testapp',
     'deck',
     'api',
+    'multiplayer',
 ]
 
 MIDDLEWARE = [
