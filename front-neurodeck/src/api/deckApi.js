@@ -1,20 +1,87 @@
-const BASE_URL = "http://127.0.0.1:8000/deck/api/decks/";
+const BASE_URL = "http://127.0.0.1:8000";
 
-export const fetchDecks = async () => {
-  const res = await fetch(BASE_URL);
-  return res.json();
-};
+function authHeaders() {
+  const token = localStorage.getItem("access");
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
 
-export const createDeck = async (deckData) => {
-  const res = await fetch(BASE_URL + "create/", {
+async function handleResponse(res) {
+  const data = await res.json();
+  if (!res.ok) {
+    const message =
+      typeof data === "object"
+        ? Object.values(data).flat().join(" ")
+        : "Request failed";
+    throw new Error(message);
+  }
+  return data;
+}
+
+export async function fetchDecks() {
+  const res = await fetch(`${BASE_URL}/deck/api/decks/`);
+  return handleResponse(res);
+}
+
+export async function createDeck(deckData) {
+  const res = await fetch(`${BASE_URL}/deck/api/decks/create/`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(),
     body: JSON.stringify(deckData),
   });
-  return res.json();
-};
+  return handleResponse(res);
+}
 
-export const deleteDeck = async (deckId) => {
-  const res = await fetch(`${BASE_URL}${deckId}/delete/`, { method: "DELETE" });
-  return res.json();
-};
+export async function updateDeck(deckId, deckData) {
+  const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/update/`, {
+    method: "PATCH",
+    headers: authHeaders(),
+    body: JSON.stringify(deckData),
+  });
+  return handleResponse(res);
+}
+
+export async function deleteDeck(deckId) {
+  const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/delete/`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+  return handleResponse(res);
+}
+
+// ─── Card API ─────────────────────────────────────────────────────────────────
+
+export async function fetchCards(deckId) {
+  const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/cards/`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(res);
+}
+
+export async function createCard(deckId, cardData) {
+  const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/cards/create/`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify(cardData),
+  });
+  return handleResponse(res);
+}
+
+export async function updateCard(deckId, cardId, cardData) {
+  const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/cards/${cardId}/update/`, {
+    method: "PATCH",
+    headers: authHeaders(),
+    body: JSON.stringify(cardData),
+  });
+  return handleResponse(res);
+}
+
+export async function deleteCard(deckId, cardId) {
+  const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/cards/${cardId}/delete/`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+  return handleResponse(res);
+}

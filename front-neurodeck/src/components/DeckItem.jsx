@@ -1,7 +1,11 @@
 import React, { useState } from "react";
+import { updateDeck, deleteDeck } from "../api/deckApi";
+import CardEditor from "./CardEditor";
 
 export default function DeckItem({ deck, onDelete, onUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [showCards, setShowCards] = useState(false);
+
   const [deckName, setDeckName] = useState(deck.DeckName);
   const [category, setCategory] = useState(deck.Category || "");
   const [description, setDescription] = useState(deck.Description || "");
@@ -10,27 +14,24 @@ export default function DeckItem({ deck, onDelete, onUpdate }) {
   const handleSave = async () => {
     setError("");
     try {
-      const token = localStorage.getItem("access");
-      const res = await fetch(`http://127.0.0.1:8000/deck/api/decks/${deck.DeckID}/update/`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,   // ← was missing
-        },
-        body: JSON.stringify({ DeckName: deckName, Category: category, Description: description }),
+      const data = await updateDeck(deck.DeckID, {
+        DeckName: deckName,
+        Category: category,
+        Description: description,
       });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Failed to update deck");
-      }
-
-      const data = await res.json();
       setIsEditing(false);
       onUpdate(data);
     } catch (err) {
-      console.error(err);
       setError(err.message || "Could not update deck");
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteDeck(deck.DeckID);
+      onDelete(deck.DeckID);
+    } catch (err) {
+      setError(err.message || "Could not delete deck");
     }
   };
 
@@ -81,13 +82,27 @@ export default function DeckItem({ deck, onDelete, onUpdate }) {
             <strong>Category:</strong> {deck.Category}
           </p>
           <p className="text-small">{deck.Description}</p>
+          {error && <p className="help is-danger">{error}</p>}
           <div className="buttons">
+            <button
+              className="button is-small"
+              onClick={() => setShowCards((prev) => !prev)}
+            >
+              {showCards ? "Hide Cards" : "View Cards"}
+            </button>
             <button className="button is-small" onClick={() => setIsEditing(true)}>Edit</button>
-            <button className="button is-small is-danger" onClick={() => onDelete(deck.DeckID)}>
+            <button className="button is-small is-danger" onClick={handleDelete}>
               Delete
             </button>
           </div>
         </>
+      )}
+
+      {/* ── Accordion ── */}
+      {showCards && !isEditing && (
+        <div className="mt-3">
+          <CardEditor deckId={deck.DeckID} />
+        </div>
       )}
     </div>
   );

@@ -1,20 +1,18 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const API = 'http://localhost:8000/multiplayer';
+const TOKEN_URL = 'http://localhost:8000/api/token/refresh/';
 
-/** Read the JWT access token from localStorage. */
+// ─── Auth helpers ─────────────────────────────────────────────────────────────
+
 const getToken = () => localStorage.getItem('access');
 
-/** Axios config with Bearer token header. */
 const authHeaders = () => ({
   headers: { Authorization: `Bearer ${getToken()}` },
 });
 
-/**
- * Decode user_id from the JWT payload.
- * djangorestframework-simplejwt embeds `user_id` by default.
- */
 const getUserIdFromToken = () => {
   try {
     const token = getToken();
@@ -26,7 +24,49 @@ const getUserIdFromToken = () => {
   }
 };
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
+/**
+ * Attempt a silent token refresh.
+ * Returns true if a new access token was stored, false otherwise.
+ */
+const tryRefresh = async () => {
+  const refresh = localStorage.getItem('refresh');
+  if (!refresh) return false;
+  try {
+    const res = await axios.post(TOKEN_URL, { refresh });
+    localStorage.setItem('access', res.data.access);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Wraps any axios call.  On a 401 it tries one token refresh then retries.
+ * If the refresh also fails the user is redirected to login.
+ *
+ * @param {() => Promise} requestFn  — zero-argument function that calls axios
+ * @param {Function} onAuthFail      — called when refresh fails (e.g. navigate to '/')
+ */
+const withAuth = async (requestFn, onAuthFail) => {
+  try {
+    return await requestFn();
+  } catch (err) {
+    if (err.response?.status !== 401) throw err;
+
+    const refreshed = await tryRefresh();
+    if (!refreshed) {
+      localStorage.removeItem('access');
+      localStorage.removeItem('refresh');
+      onAuthFail?.();
+      throw err;
+    }
+
+    // Retry once with the new token
+    return await requestFn();
+  }
+};
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function Scoreboard({ participants, currentUserId }) {
   const sorted = [...participants].sort((a, b) => b.Score - a.Score);
@@ -54,7 +94,7 @@ function Scoreboard({ participants, currentUserId }) {
 
 function FlashcardPanel({ card, onSubmit, onSkip, isLoading }) {
   const [answer, setAnswer] = useState('');
-  const [feedback, setFeedback] = useState(null); // { is_correct, correct_answer }
+  const [feedback, setFeedback] = useState(null);
 
   const handleSubmit = async () => {
     if (!answer.trim()) return;
@@ -86,13 +126,11 @@ function FlashcardPanel({ card, onSubmit, onSkip, isLoading }) {
 
   return (
     <div className="box">
-      {/* Question */}
       <div className="notification is-dark mb-4">
         <p className="has-text-weight-bold mb-1 text-small has-text-grey">Question</p>
         <p className="h4">{card.Question}</p>
       </div>
 
-      {/* Feedback after answer */}
       {feedback ? (
         <div>
           <div className={`notification ${feedback.is_correct ? 'is-success' : 'is-danger'} mb-3`}>
@@ -137,76 +175,76 @@ function FlashcardPanel({ card, onSubmit, onSkip, isLoading }) {
   );
 }
 
-// ─── Main component ────────────────────────────────────────────────────────────
+// ─── Main component ───────────────────────────────────────────────────────────
 
-/**
- * MultiplayerRoom
- *
- * Props:
- *   deckId  — the deck to use when creating a room (optional; undefined = ask user)
- *   onLeave — callback when user navigates away
- */
 export default function MultiplayerRoom({ deckId, onLeave }) {
+  const navigate = useNavigate();
   const userId = getUserIdFromToken();
 
-  // UI state machine: 'entry' | 'lobby' | 'playing' | 'finished'
+  const redirectToLogin = useCallback(() => navigate('/'), [navigate]);
+
   const [phase, setPhase] = useState('entry');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Entry form
   const [joinCodeInput, setJoinCodeInput] = useState('');
   const [createDeckId, setCreateDeckId] = useState(deckId ?? '');
 
-  // Room
-  const [room, setRoom] = useState(null); // full room object from API
+  const [room, setRoom] = useState(null);
   const [card, setCard] = useState(null);
 
   const pollRef = useRef(null);
 
-  // ── Helpers ──────────────────────────────────────────────────────────────────
+  // Keep a ref to room so polling closure always sees the latest value
+  const roomRef = useRef(null);
+  useEffect(() => { roomRef.current = room; }, [room]);
 
   const clearError = () => setError('');
 
   const applyRoomUpdate = useCallback((data) => {
     setRoom(data);
-    if (data.Status === 'playing' && phase !== 'playing') setPhase('playing');
+    roomRef.current = data;
+    if (data.Status === 'playing') setPhase('playing');
     if (data.Status === 'finished') setPhase('finished');
-  }, [phase]);
+  }, []);
 
-  // ── Polling ──────────────────────────────────────────────────────────────────
+  // ── Polling ────────────────────────────────────────────────────────────────
 
   const startPolling = useCallback((roomCode) => {
     if (pollRef.current) clearInterval(pollRef.current);
     pollRef.current = setInterval(async () => {
       try {
-        const res = await axios.get(`${API}/${roomCode}/`, authHeaders());
+        const res = await withAuth(
+          () => axios.get(`${API}/${roomCode}/`, authHeaders()),
+          redirectToLogin,
+        );
         applyRoomUpdate(res.data);
       } catch {
         // Silently ignore transient polling errors
       }
     }, 3000);
-  }, [applyRoomUpdate]);
+  }, [applyRoomUpdate, redirectToLogin]);
 
   useEffect(() => () => clearInterval(pollRef.current), []);
 
-  // ── Actions ──────────────────────────────────────────────────────────────────
+  // ── Actions ────────────────────────────────────────────────────────────────
 
   const createRoom = async () => {
     if (!createDeckId) return setError('Please enter a Deck ID.');
     clearError();
     setIsLoading(true);
     try {
-      const res = await axios.post(
-        `${API}/create-room/`,
-        { deck_id: createDeckId },
-        authHeaders(),
+      const res = await withAuth(
+        () => axios.post(`${API}/create-room/`, { deck_id: createDeckId }, authHeaders()),
+        redirectToLogin,
       );
       applyRoomUpdate(res.data);
       setPhase('lobby');
       startPolling(res.data.RoomCode);
     } catch (e) {
-      setError(e.response?.data?.detail ?? 'Failed to create room.');
+      if (e.response?.status !== 401) {
+        setError(e.response?.data?.detail ?? 'Failed to create room.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -218,16 +256,17 @@ export default function MultiplayerRoom({ deckId, onLeave }) {
     clearError();
     setIsLoading(true);
     try {
-      const res = await axios.post(
-        `${API}/join-room/`,
-        { room_code: code },
-        authHeaders(),
+      const res = await withAuth(
+        () => axios.post(`${API}/join-room/`, { room_code: code }, authHeaders()),
+        redirectToLogin,
       );
       applyRoomUpdate(res.data);
       setPhase('lobby');
       startPolling(code);
     } catch (e) {
-      setError(e.response?.data?.detail ?? 'Room not found or already finished.');
+      if (e.response?.status !== 401) {
+        setError(e.response?.data?.detail ?? 'Room not found or already finished.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -236,26 +275,35 @@ export default function MultiplayerRoom({ deckId, onLeave }) {
   const startGame = async () => {
     clearError();
     try {
-      const res = await axios.post(
-        `${API}/${room.RoomCode}/start/`,
-        {},
-        authHeaders(),
+      const res = await withAuth(
+        () => axios.post(`${API}/${roomRef.current.RoomCode}/start/`, {}, authHeaders()),
+        redirectToLogin,
       );
       applyRoomUpdate(res.data);
       setPhase('playing');
-      fetchCard();
+      // Pass the room code directly so we don't rely on stale state
+      await fetchCard(res.data.RoomCode);
     } catch (e) {
-      setError(e.response?.data?.detail ?? 'Failed to start game.');
+      if (e.response?.status !== 401) {
+        setError(e.response?.data?.detail ?? 'Failed to start game.');
+      }
     }
   };
 
-  const fetchCard = async () => {
+  const fetchCard = async (roomCode) => {
+    const code = roomCode ?? roomRef.current?.RoomCode;
+    if (!code) return;
     setIsLoading(true);
     try {
-      const res = await axios.get(`${API}/${room.RoomCode}/flashcard/`, authHeaders());
+      const res = await withAuth(
+        () => axios.get(`${API}/${code}/flashcard/`, authHeaders()),
+        redirectToLogin,
+      );
       setCard(res.data);
     } catch (e) {
-      setError(e.response?.data?.detail ?? 'Failed to fetch card.');
+      if (e.response?.status !== 401) {
+        setError(e.response?.data?.detail ?? 'Failed to fetch card.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -263,30 +311,35 @@ export default function MultiplayerRoom({ deckId, onLeave }) {
 
   const submitAnswer = async (answer) => {
     try {
-      const res = await axios.post(
-        `${API}/submit-answer/`,
-        { room_code: room.RoomCode, card_id: card.CardID, answer },
-        authHeaders(),
+      const res = await withAuth(
+        () => axios.post(
+          `${API}/submit-answer/`,
+          { room_code: roomRef.current.RoomCode, card_id: card.CardID, answer },
+          authHeaders(),
+        ),
+        redirectToLogin,
       );
-      return res.data; // { is_correct, correct_answer, score }
+      return res.data;
     } catch (e) {
-      setError(e.response?.data?.detail ?? 'Failed to submit answer.');
+      if (e.response?.status !== 401) {
+        setError(e.response?.data?.detail ?? 'Failed to submit answer.');
+      }
       return null;
     }
   };
 
-  // ── Render helpers ────────────────────────────────────────────────────────────
+  // ── Render helpers ─────────────────────────────────────────────────────────
 
+  // Host field from the serializer is the raw FK integer (User PK)
   const isHost = room?.Host === userId;
   const myParticipant = room?.participants.find((p) => p.user_id === userId);
 
-  // ── Phase: Entry ─────────────────────────────────────────────────────────────
+  // ── Phase: Entry ───────────────────────────────────────────────────────────
 
   if (phase === 'entry') {
     return (
       <div className="columns is-centered mt-4">
         <div className="column is-8-tablet is-6-desktop">
-          {/* Create room */}
           <div className="box mb-5">
             <p className="h4 mb-4">Create a Room</p>
             <div className="field">
@@ -316,7 +369,6 @@ export default function MultiplayerRoom({ deckId, onLeave }) {
             <hr className="is-flex-grow-1" />
           </div>
 
-          {/* Join room */}
           <div className="box">
             <p className="h4 mb-4">Join a Room</p>
             <div className="field">
@@ -347,7 +399,7 @@ export default function MultiplayerRoom({ deckId, onLeave }) {
     );
   }
 
-  // ── Phase: Lobby ─────────────────────────────────────────────────────────────
+  // ── Phase: Lobby ───────────────────────────────────────────────────────────
 
   if (phase === 'lobby') {
     return (
@@ -383,7 +435,7 @@ export default function MultiplayerRoom({ deckId, onLeave }) {
     );
   }
 
-  // ── Phase: Playing ────────────────────────────────────────────────────────────
+  // ── Phase: Playing ─────────────────────────────────────────────────────────
 
   if (phase === 'playing') {
     return (
@@ -401,7 +453,7 @@ export default function MultiplayerRoom({ deckId, onLeave }) {
           <FlashcardPanel
             card={card}
             onSubmit={submitAnswer}
-            onSkip={fetchCard}
+            onSkip={() => fetchCard()}
             isLoading={isLoading}
           />
 
@@ -415,11 +467,10 @@ export default function MultiplayerRoom({ deckId, onLeave }) {
     );
   }
 
-  // ── Phase: Finished ───────────────────────────────────────────────────────────
+  // ── Phase: Finished ────────────────────────────────────────────────────────
 
   if (phase === 'finished') {
-    const winner = [...(room?.participants ?? [])]
-      .sort((a, b) => b.Score - a.Score)[0];
+    const winner = [...(room?.participants ?? [])].sort((a, b) => b.Score - a.Score)[0];
     return (
       <div className="columns is-centered mt-4">
         <div className="column is-8-tablet is-6-desktop has-text-centered">
