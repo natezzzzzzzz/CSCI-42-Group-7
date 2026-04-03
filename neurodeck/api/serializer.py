@@ -1,28 +1,30 @@
-from api.models import User
+from api.models import User, Profile
 from django.contrib.auth.password_validation import validate_password
+from django.db import transaction
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
-from rest_framework.validators import UniqueValidator
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'username', 'email')
 
+
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-        
-        # These are claims, you can add custom claims
-        token['full_name'] = user.profile.full_name
+
+        profile, _ = Profile.objects.get_or_create(user=user)
+
+        token['full_name'] = profile.full_name
         token['username'] = user.username
         token['email'] = user.email
-        token['bio'] = user.profile.bio
-        token['image'] = str(user.profile.image)
-        token['verified'] = user.profile.verified
-        # ...
+        token['bio'] = profile.bio
+        token['image'] = str(profile.image)
+        token['verified'] = profile.verified
+
         return token
 
 
@@ -39,17 +41,14 @@ class RegisterSerializer(serializers.ModelSerializer):
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError(
                 {"password": "Password fields didn't match."})
-
         return attrs
 
     def create(self, validated_data):
-        user = User.objects.create(
-            username=validated_data['username'],
-            email=validated_data['email']
-
-        )
-
-        user.set_password(validated_data['password'])
-        user.save()
-
+        with transaction.atomic():
+            # CustomUserManager.create_user(email, username, password)
+            user = User.objects.create_user(
+                email=validated_data['email'],
+                username=validated_data['username'],
+                password=validated_data['password'],
+            )
         return user
