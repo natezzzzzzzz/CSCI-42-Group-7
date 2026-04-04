@@ -6,6 +6,7 @@ import MainMenu from "./pages/MainMenu";
 import DeckPage from "./pages/DeckPage";
 import MultiplayerPage from "./pages/MultiplayerPage";
 import './styles/App.css';
+import SoloGamePage from "./pages/SoloGamePage";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <Route path="/main" element={<MainMenu />} />
         <Route path="/decks" element={<DeckPage />} />
         <Route path="/multiplayer" element={<MultiplayerPage />} />
+        <Route path="/solo/:deckId" element={<SoloGamePage />} />
       </Routes>
     </Router>
   );

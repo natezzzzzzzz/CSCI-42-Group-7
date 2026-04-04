@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { updateDeck, deleteDeck } from "../api/deckApi";
 import CardEditor from "./CardEditor";
+import { useNavigate } from "react-router-dom";
 
 export default function DeckItem({ deck, onDelete, onUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
   const [showCards, setShowCards] = useState(false);
+  const navigate = useNavigate();
 
   const [deckName, setDeckName] = useState(deck.DeckName);
   const [category, setCategory] = useState(deck.Category || "");
@@ -93,6 +95,9 @@ export default function DeckItem({ deck, onDelete, onUpdate }) {
             <button className="button is-small" onClick={() => setIsEditing(true)}>Edit</button>
             <button className="button is-small is-danger" onClick={handleDelete}>
               Delete
+            </button>
+            <button className="button is-small is-link" onClick={() => navigate(`/solo/${deck.DeckID}`)}>
+              Play
             </button>
           </div>
         </>

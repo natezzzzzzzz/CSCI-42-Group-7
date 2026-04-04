@@ -131,6 +131,7 @@ export default function CardEditor({ deckId }) {
               Add Card
             </button>
           </div>
+          <br />
         </div>
       </form>
 
