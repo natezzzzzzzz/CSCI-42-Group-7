@@ -1,10 +1,8 @@
 import React from "react";
 import '../styles/index.css'
 import 'bulma/css/bulma.min.css';
-import {useNavigate} from "react-router-dom";
 
 function MainMenu({ setPage }) {
-  const navigate = useNavigate();
   return (
     <section className="section">
       <div className="container">
@@ -44,7 +42,7 @@ function MainMenu({ setPage }) {
         <div className="has-text-centered mt-6">
           <button
             className="button is-danger"
-            onClick={() => navigate("/login")}
+            onClick={() => setPage("login")}
           >
             Logout
           </button>

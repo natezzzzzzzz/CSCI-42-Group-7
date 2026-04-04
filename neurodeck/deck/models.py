@@ -1,10 +1,6 @@
 from django.db import models
-from django.contrib.auth import get_user_model
-# from django.db.models.signals import post_save
-# from django.dispatch import receiver
 
-User = get_user_model()
-#This is the utility function to generate incremental IDs
+# Utility function for incremental IDs
 def generate_id(prefix, model, digits=4):
     last = model.objects.order_by("-" + model._meta.pk.name).first()
     if last:
@@ -15,8 +11,6 @@ def generate_id(prefix, model, digits=4):
     return f"{prefix}{new_num:0{digits}d}"
 
 
-
-        
 class Deck(models.Model):
     DeckID = models.CharField(primary_key=True, max_length=20, editable=False)
     UserID = models.ForeignKey("api.User", on_delete=models.CASCADE, related_name='user_decks')

@@ -6,10 +6,8 @@ urlpatterns = [
     path('api/decks/create/', views.create_deck_api),
     path('api/decks/<str:deck_id>/delete/', views.delete_deck_api),
     path('api/decks/<str:deck_id>/update/', views.update_deck),
-
-   
-    path('api/flashcards/create/', views.create_flashcard),  
-    path('api/flashcards/<str:deck_id>/', views.flashcard_list),
-    path('api/flashcards/<int:card_id>/delete/', views.delete_flashcard),
-    path('api/flashcards/<int:card_id>/update/', views.update_flashcard),
+    path('api/decks/<str:deck_id>/cards/', views.list_cards),
+    path('api/decks/<str:deck_id>/cards/create/', views.create_card),
+    path('api/decks/<str:deck_id>/cards/<int:card_id>/update/', views.update_card),
+    path('api/decks/<str:deck_id>/cards/<int:card_id>/delete/', views.delete_card),
 ]

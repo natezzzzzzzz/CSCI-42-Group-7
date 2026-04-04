@@ -26,5 +26,6 @@ export default function DeckList({ decks, searchQuery, filterCategory, onUpdate,
       ))}
       {filteredDecks.length === 0 && <p className="text-small">No decks found.</p>}
     </div>
+    
   );
 }

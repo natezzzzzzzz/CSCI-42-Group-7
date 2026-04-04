@@ -17,9 +17,8 @@ class DeckAdmin(admin.ModelAdmin):
 
 
 class FlashcardAdmin(admin.ModelAdmin):
-    list_display = ("CardID", "DeckID", "Question", "FlashDateCreated", "LastReviewed")
+    list_display = ("CardID", "DeckID", "Question", "FlashDateCreated")
     search_fields = ("Question", "DeckID__DeckName")
-    list_filter = ("DeckID",)
 
 
 admin.site.register(Deck, DeckAdmin)
