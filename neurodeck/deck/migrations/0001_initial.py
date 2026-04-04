@@ -50,8 +50,5 @@ class Migration(migrations.Migration):
                 ('UserID', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='user_card_progress', to=settings.AUTH_USER_MODEL)),
                 ('CardID', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='card_progress', to='deck.flashcard')),
             ],
-            options={
-                'unique_together': {('UserID', 'CardID')},
-            },
         ),
     ]

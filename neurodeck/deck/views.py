@@ -1,9 +1,8 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .models import Deck, Flashcard
+from .models import Deck
 from .serializers import DeckSerializer, FlashcardSerializer
-
 
 @api_view(['GET'])
 def deck_list(request):
@@ -116,3 +115,49 @@ def delete_card(request, deck_id, card_id):
 
     card.delete()
     return Response({"message": "Card deleted"}, status=200)
+        "Description": deck.Description
+    })
+
+
+@api_view(['GET'])
+def flashcard_list(request, deck_id):
+    flashcards = Flashcard.objects.filter(DeckID__DeckID=deck_id)
+    serializer = FlashcardSerializer(flashcards, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['POST'])
+def create_flashcard(request):
+    serializer = FlashcardSerializer(data=request.data)
+    if serializer.is_valid():
+        flashcard = serializer.save()
+        return Response(FlashcardSerializer(flashcard).data, status=201)
+    return Response(serializer.errors, status=400)
+
+@api_view(['PATCH'])
+def update_flashcard(request, card_id):
+    flashcard = Flashcard.objects.filter(CardID=card_id).first()
+    if not flashcard:
+        return Response({"error": "Flashcard not found"}, status=404)
+
+    for key, value in request.data.items():
+        setattr(flashcard, key, value)
+    flashcard.save()
+    return Response({
+        "CardID": flashcard.CardID,
+        "DeckID": flashcard.DeckID.DeckID,
+        "Question": flashcard.Question,
+        "Answer": flashcard.Answer,
+        "FlashDateCreated": flashcard.FlashDateCreated,
+        "LastReviewed": flashcard.LastReviewed
+    })
+
+
+@api_view(['DELETE'])
+def delete_flashcard(request, card_id):
+    flashcard = Flashcard.objects.filter(CardID=card_id).first()
+    if not flashcard:
+        return Response({"error": "Flashcard not found"}, status=404)
+    
+    flashcard.delete()
+    return Response({"message": "Flashcard deleted"}, status=200)
