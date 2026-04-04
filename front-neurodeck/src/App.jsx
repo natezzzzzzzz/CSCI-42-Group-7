@@ -7,6 +7,7 @@ import DeckPage from "./pages/DeckPage";
 import MultiplayerPage from "./pages/MultiplayerPage";
 import './styles/App.css';
 import SoloGamePage from "./pages/SoloGamePage";
+import AchievementsPage from "./pages/AchievementsPage";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/decks" element={<DeckPage />} />
         <Route path="/multiplayer" element={<MultiplayerPage />} />
         <Route path="/solo/:deckId" element={<SoloGamePage />} />
+        <Route path="/achievements" element={<AchievementsPage />} />
       </Routes>
     </Router>
   );

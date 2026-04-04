@@ -1,8 +1,10 @@
 import React from "react";
 import '../styles/index.css'
 import 'bulma/css/bulma.min.css';
+import { useNavigate } from "react-router-dom";
 
 function MainMenu({ setPage }) {
+  const navigate = useNavigate();
   return (
     <section className="section">
       <div className="container">
@@ -20,6 +22,9 @@ function MainMenu({ setPage }) {
           <div className="column">
             <div className="box shadow-sm">
               <h2 className="h6">Profile</h2>
+              <button onClick={() => navigate("/achievements")}>
+                View Achievements
+              </button>
               <p className="text-small">View your account details</p>
             </div>
           </div>

@@ -9,6 +9,7 @@ export default function SoloGamePage() {
   const [cards, setCards] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [visitedCards, setVisitedCards] = useState(new Set());
 
   useEffect(() => {
     const load = async () => {
@@ -18,11 +19,40 @@ export default function SoloGamePage() {
     load();
   }, [deckId]);
 
+  useEffect(() => {
+    if (cards.length > 0 && currentIndex === cards.length - 1) {
+      const saved = JSON.parse(localStorage.getItem("studyStats")) || {
+        cardsStudied: 0,
+        decksCompleted: 0,
+        streak: 0,
+      };
+
+      saved.decksCompleted += 1;
+
+      localStorage.setItem("studyStats", JSON.stringify(saved));
+    }
+  }, [currentIndex]);
+
   const handleFlip = () => setIsFlipped(!isFlipped);
 
   const handleNext = () => {
     setIsFlipped(false);
-    setCurrentIndex(prev => prev + 1);
+
+    const nextIndex = (currentIndex + 1) % cards.length;
+    const nextCardId = cards[nextIndex].CardID;
+
+    setVisitedCards((prev) => {
+      if (!prev.has(nextCardId)) {
+        const updated = new Set(prev);
+        updated.add(nextCardId);
+
+        updateStats(); // ✅ ONLY count new card
+        return updated;
+      }
+      return prev;
+    });
+
+    setCurrentIndex(nextIndex);
   };
 
   const handlePrev = () => {
@@ -38,6 +68,19 @@ export default function SoloGamePage() {
   if (cards.length === 0) return <p>No flashcards in this deck yet!</p>;
 
   const current = cards[currentIndex];
+
+  const updateStats = () => {
+    const saved = JSON.parse(localStorage.getItem("studyStats")) || {
+      cardsStudied: 0,
+      decksCompleted: 0,
+      streak: 0,
+    };
+
+    saved.cardsStudied += 1;
+
+    localStorage.setItem("studyStats", JSON.stringify(saved));
+  };
+
 
   return (
     <div style={{ textAlign: "center", padding: "40px" }}>
