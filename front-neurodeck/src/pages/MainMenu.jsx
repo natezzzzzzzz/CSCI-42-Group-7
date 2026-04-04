@@ -22,17 +22,14 @@ function MainMenu({ setPage }) {
           <div className="column">
             <div className="box shadow-sm">
               <h2 className="h6">Profile</h2>
-              <button onClick={() => navigate("/achievements")}>
-                View Achievements
-              </button>
               <p className="text-small">View your account details</p>
             </div>
           </div>
 
-          <div className="column">
+          <div className="column" onClick = {() => navigate("/achievements")}>
             <div className="box shadow-sm">
-              <h2 className="h6">Settings</h2>
-              <p className="text-small">Manage preferences</p>
+              <h2 className="h6">Achievements</h2>
+              <p className="text-small">View your achievements</p>
             </div>
           </div>
 
@@ -44,6 +41,27 @@ function MainMenu({ setPage }) {
           </div>
         </div>
 
+        <div className="columns"> {/* New row */}
+
+          <div className="column" onClick={() => navigate("/decks")}>
+            <div className="box shadow-sm">
+              <h2> Decks</h2>
+              <p className="text-small">View and manage your flashcard decks</p>
+              </div>
+          </div>
+
+          <div className="column" onClick={() => navigate("/multiplayer")}> 
+            <div className="box shadow-sm">
+              <h2> Multiplayer</h2>
+              <p className="text-small">Play with friends</p>
+              </div>
+          </div>
+        </div>
+
+        
+
+        
+
         <div className="has-text-centered mt-6">
           <button
             className="button is-danger"
@@ -52,6 +70,8 @@ function MainMenu({ setPage }) {
             Logout
           </button>
         </div>
+
+        
 
       </div>
     </section>
