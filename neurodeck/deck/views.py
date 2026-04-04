@@ -1,11 +1,9 @@
-from django.shortcuts import render, redirect
-from .models import Deck, Flashcard
-from django.contrib.auth.models import User
-from django.contrib.auth.decorators import login_required
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .models import Deck
+from .models import Deck, Flashcard
 from .serializers import DeckSerializer, FlashcardSerializer
+
 
 @api_view(['GET'])
 def deck_list(request):
@@ -13,78 +11,108 @@ def deck_list(request):
     serializer = DeckSerializer(decks, many=True)
     return Response(serializer.data)
 
+
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def create_deck_api(request):
     serializer = DeckSerializer(data=request.data)
     if serializer.is_valid():
-        deck = serializer.save()  # save returns the instance
-        return Response(DeckSerializer(deck).data, status=201)  # serialize the saved deck
+        deck = serializer.save(UserID=request.user)
+        return Response(DeckSerializer(deck).data, status=201)
     return Response(serializer.errors, status=400)
+
+
 @api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
 def delete_deck_api(request, deck_id):
-    deck = Deck.objects.filter(DeckID=deck_id).first()
+    deck = Deck.objects.filter(DeckID=deck_id, UserID=request.user).first()
     if not deck:
         return Response({"error": "Deck not found"}, status=404)
-    
     deck.delete()
     return Response({"message": "Deck deleted"}, status=200)
 
+
 @api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
 def update_deck(request, deck_id):
-    deck = Deck.objects.filter(DeckID=deck_id).first()
+    deck = Deck.objects.filter(DeckID=deck_id, UserID=request.user).first()
     if not deck:
         return Response({"error": "Deck not found"}, status=404)
 
+    allowed = {'DeckName', 'Category', 'Description', 'IsPublic'}
     for key, value in request.data.items():
-        setattr(deck, key, value)
+        if key in allowed:
+            setattr(deck, key, value)
     deck.save()
+
     return Response({
         "DeckID": deck.DeckID,
         "DeckName": deck.DeckName,
         "Category": deck.Category,
-        "Description": deck.Description
+        "Description": deck.Description,
     })
 
 
+# ─── Flashcard endpoints ──────────────────────────────────────────────────────
+
 @api_view(['GET'])
-def flashcard_list(request, deck_id):
-    flashcards = Flashcard.objects.filter(DeckID__DeckID=deck_id)
-    serializer = FlashcardSerializer(flashcards, many=True)
-    return Response(serializer.data)
+@permission_classes([IsAuthenticated])
+def list_cards(request, deck_id):
+    """List all flashcards in a deck. Deck must belong to the requesting user."""
+    deck = Deck.objects.filter(DeckID=deck_id, UserID=request.user).first()
+    if not deck:
+        return Response({"error": "Deck not found"}, status=404)
+    cards = Flashcard.objects.filter(DeckID=deck)
+    return Response(FlashcardSerializer(cards, many=True).data)
 
 
 @api_view(['POST'])
-def create_flashcard(request):
+@permission_classes([IsAuthenticated])
+def create_card(request, deck_id):
+    """Create a flashcard inside a deck the user owns."""
+    deck = Deck.objects.filter(DeckID=deck_id, UserID=request.user).first()
+    if not deck:
+        return Response({"error": "Deck not found"}, status=404)
+
     serializer = FlashcardSerializer(data=request.data)
     if serializer.is_valid():
-        flashcard = serializer.save()
-        return Response(FlashcardSerializer(flashcard).data, status=201)
+        card = serializer.save(DeckID=deck)
+        return Response(FlashcardSerializer(card).data, status=201)
     return Response(serializer.errors, status=400)
 
-@api_view(['PATCH'])
-def update_flashcard(request, card_id):
-    flashcard = Flashcard.objects.filter(CardID=card_id).first()
-    if not flashcard:
-        return Response({"error": "Flashcard not found"}, status=404)
 
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def update_card(request, deck_id, card_id):
+    """Edit the question or answer of a card. Deck ownership is enforced."""
+    deck = Deck.objects.filter(DeckID=deck_id, UserID=request.user).first()
+    if not deck:
+        return Response({"error": "Deck not found"}, status=404)
+
+    card = Flashcard.objects.filter(CardID=card_id, DeckID=deck).first()
+    if not card:
+        return Response({"error": "Card not found"}, status=404)
+
+    allowed = {'Question', 'Answer'}
     for key, value in request.data.items():
-        setattr(flashcard, key, value)
-    flashcard.save()
-    return Response({
-        "CardID": flashcard.CardID,
-        "DeckID": flashcard.DeckID.DeckID,
-        "Question": flashcard.Question,
-        "Answer": flashcard.Answer,
-        "FlashDateCreated": flashcard.FlashDateCreated,
-        "LastReviewed": flashcard.LastReviewed
-    })
+        if key in allowed:
+            setattr(card, key, value)
+    card.save()
+
+    return Response(FlashcardSerializer(card).data)
 
 
 @api_view(['DELETE'])
-def delete_flashcard(request, card_id):
-    flashcard = Flashcard.objects.filter(CardID=card_id).first()
-    if not flashcard:
-        return Response({"error": "Flashcard not found"}, status=404)
-    
-    flashcard.delete()
-    return Response({"message": "Flashcard deleted"}, status=200)
+@permission_classes([IsAuthenticated])
+def delete_card(request, deck_id, card_id):
+    """Delete a card from a deck the user owns."""
+    deck = Deck.objects.filter(DeckID=deck_id, UserID=request.user).first()
+    if not deck:
+        return Response({"error": "Deck not found"}, status=404)
+
+    card = Flashcard.objects.filter(CardID=card_id, DeckID=deck).first()
+    if not card:
+        return Response({"error": "Card not found"}, status=404)
+
+    card.delete()
+    return Response({"message": "Card deleted"}, status=200)

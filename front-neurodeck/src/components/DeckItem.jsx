@@ -1,47 +1,113 @@
 import React, { useState } from "react";
+import { updateDeck, deleteDeck } from "../api/deckApi";
+import CardEditor from "./CardEditor";
+import { useNavigate } from "react-router-dom";
 
 export default function DeckItem({ deck, onDelete, onUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [showCards, setShowCards] = useState(false);
+  const navigate = useNavigate();
+
   const [deckName, setDeckName] = useState(deck.DeckName);
   const [category, setCategory] = useState(deck.Category || "");
   const [description, setDescription] = useState(deck.Description || "");
+  const [error, setError] = useState("");
 
   const handleSave = async () => {
+    setError("");
     try {
-      const res = await fetch(`http://127.0.0.1:8000/deck/api/decks/${deck.DeckID}/update/`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ DeckName: deckName, Category: category, Description: description }),
+      const data = await updateDeck(deck.DeckID, {
+        DeckName: deckName,
+        Category: category,
+        Description: description,
       });
-
-      if (!res.ok) throw new Error("Failed to update deck");
-      const data = await res.json();
       setIsEditing(false);
       onUpdate(data);
     } catch (err) {
-      console.error(err);
-      alert("Could not update deck");
+      setError(err.message || "Could not update deck");
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteDeck(deck.DeckID);
+      onDelete(deck.DeckID);
+    } catch (err) {
+      setError(err.message || "Could not delete deck");
     }
   };
 
   return (
-    <div style={{ border: "1px solid #ccc", padding: "10px", marginBottom: "10px" }}>
+    <div className="box shadow-lg">
       {isEditing ? (
         <>
-          <input value={deckName} onChange={(e) => setDeckName(e.target.value)} />
-          <input value={category} onChange={(e) => setCategory(e.target.value)} />
-          <input value={description} onChange={(e) => setDescription(e.target.value)} />
-          <button onClick={handleSave}>Save</button>
-          <button onClick={() => setIsEditing(false)}>Cancel</button>
+          <div className="field">
+            <div className="control">
+              <input
+                className="input"
+                value={deckName}
+                onChange={(e) => setDeckName(e.target.value)}
+                placeholder="Deck Name"
+              />
+            </div>
+          </div>
+          <div className="field">
+            <div className="control">
+              <input
+                className="input"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder="Category"
+              />
+            </div>
+          </div>
+          <div className="field">
+            <div className="control">
+              <input
+                className="input"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Description"
+              />
+            </div>
+          </div>
+          {error && <p className="help is-danger">{error}</p>}
+          <div className="buttons">
+            <button className="button is-success" onClick={handleSave}>Save</button>
+            <button className="button" onClick={() => setIsEditing(false)}>Cancel</button>
+          </div>
         </>
       ) : (
         <>
-          <h3>{deck.DeckName}</h3>
-          <p><strong>Category:</strong> {deck.Category}</p>
-          <p>{deck.Description}</p>
-          <button onClick={() => setIsEditing(true)}>Edit</button>
-          <button onClick={() => onDelete(deck.DeckID)}>Delete</button>
+          <p className="h4">{deck.DeckName}</p>
+          <p className="text-small">
+            <strong>Category:</strong> {deck.Category}
+          </p>
+          <p className="text-small">{deck.Description}</p>
+          {error && <p className="help is-danger">{error}</p>}
+          <div className="buttons">
+            <button
+              className="button is-small"
+              onClick={() => setShowCards((prev) => !prev)}
+            >
+              {showCards ? "Hide Cards" : "View Cards"}
+            </button>
+            <button className="button is-small" onClick={() => setIsEditing(true)}>Edit</button>
+            <button className="button is-small is-danger" onClick={handleDelete}>
+              Delete
+            </button>
+            <button className="button is-small is-link" onClick={() => navigate(`/solo/${deck.DeckID}`)}>
+              Play
+            </button>
+          </div>
         </>
+      )}
+
+      {/* ── Accordion ── */}
+      {showCards && !isEditing && (
+        <div className="mt-3">
+          <CardEditor deckId={deck.DeckID} />
+        </div>
       )}
     </div>
   );

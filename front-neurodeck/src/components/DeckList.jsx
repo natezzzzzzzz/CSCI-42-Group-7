@@ -3,10 +3,14 @@ import DeckItem from "./DeckItem";
 
 export default function DeckList({ decks, searchQuery, filterCategory, onUpdate, onDelete }) {
   const filteredDecks = decks.filter(deck => {
-    const matchesName = deck.DeckName.toLowerCase().includes(searchQuery.toLowerCase());
+    const name = deck.DeckName?.toLowerCase() ?? "";
+    const category = deck.Category?.toLowerCase() ?? "";
+
+    const matchesName = name.includes(searchQuery.toLowerCase());
     const matchesCategory = filterCategory
-      ? deck.Category.toLowerCase().includes(filterCategory.toLowerCase())
+      ? category.includes(filterCategory.toLowerCase())
       : true;
+
     return matchesName && matchesCategory;
   });
 
@@ -20,7 +24,8 @@ export default function DeckList({ decks, searchQuery, filterCategory, onUpdate,
           onDelete={onDelete}
         />
       ))}
-      {filteredDecks.length === 0 && <p>No decks found.</p>}
+      {filteredDecks.length === 0 && <p className="text-small">No decks found.</p>}
     </div>
+    
   );
 }

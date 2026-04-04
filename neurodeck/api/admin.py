@@ -1,10 +1,32 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from api.models import User, Profile
 
-class UserAdmin(admin.ModelAdmin):
-    list_editable = ['verified']
-    list_display = ['username', 'email']
-    
-class ProfileAdmin(admin.ModelAdmin):
-    list_display = ['user', 'wallet', 'verified']
 
+@admin.register(User)
+class UserAdmin(BaseUserAdmin):
+    list_display = ['email', 'username', 'is_staff', 'is_active']
+    list_filter = ['is_staff', 'is_active']
+    ordering = ['email']
+    search_fields = ['email', 'username']
+
+    # BaseUserAdmin expects 'username' as the primary field — override fieldsets
+    # so the admin form works correctly with email as USERNAME_FIELD.
+    fieldsets = (
+        (None, {'fields': ('email', 'password')}),
+        ('Personal info', {'fields': ('username',)}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Important dates', {'fields': ('last_login', 'date_joined')}),
+    )
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('email', 'username', 'password1', 'password2'),
+        }),
+    )
+
+
+@admin.register(Profile)
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = ['user', 'full_name', 'verified']
+    list_editable = ['verified']
