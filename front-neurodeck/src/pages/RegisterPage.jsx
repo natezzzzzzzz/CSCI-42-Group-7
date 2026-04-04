@@ -1,8 +1,10 @@
 import React from "react";
 import '../styles/index.css'
 import 'bulma/css/bulma.min.css';
+import {useNavigate} from "react-router-dom";
 
 function RegisterPage({ setPage }) {
+  const navigate = useNavigate();
   return (
     <section className="hero is-fullheight" style={{ background: "var(--color-bg)" }}>
       <div className="hero-body">
@@ -42,14 +44,14 @@ function RegisterPage({ setPage }) {
                 <button
                   className="button is-fullwidth mt-4"
                   style={{ background: "var(--color-primary)", color: "white" }}
-                  onClick={() => setPage("login")}
+                  onClick={() => navigate("/deck")}
                 >
                   Register
                 </button>
 
                 <p className="has-text-centered mt-4 text-small">
                   Already have an account?{" "}
-                  <a onClick={() => setPage("login")}>Login</a>
+                  <a onClick={() => navigate("/")}>Login</a>
                 </p>
 
               </div>
