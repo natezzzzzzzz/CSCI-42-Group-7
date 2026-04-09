@@ -58,6 +58,7 @@ class RoomParticipant(models.Model):
     User = models.ForeignKey("api.User", on_delete=models.CASCADE, related_name="room_participations")
     Score = models.IntegerField(default=0)
     JoinedAt = models.DateTimeField(auto_now_add=True)
+    CurrentCardSubmitted = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ("Room", "User")

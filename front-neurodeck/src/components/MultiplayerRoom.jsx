@@ -27,7 +27,7 @@ const getUsernameFromToken = () => {
 const MEDALS = ['🥇', '🥈', '🥉'];
 
 
-function Scoreboard({ participants, currentUsername }) {
+function Scoreboard({ participants, currentUsername, showSubmissionStatus }) {
   const sorted = [...participants].sort((a, b) => b.Score - a.Score);
   return (
     <div className="mp-scoreboard">
@@ -44,6 +44,11 @@ function Scoreboard({ participants, currentUsername }) {
             {p.username}
             {p.username === currentUsername && <span className="mp-you-badge">you</span>}
           </span>
+          {showSubmissionStatus && (
+            <span className={`mp-submission-status ${p.CurrentCardSubmitted ? 'done' : 'pending'}`}>
+              {p.CurrentCardSubmitted ? '✅' : '⏳'}
+            </span>
+          )}
           <span className="mp-scoreboard-pts">{p.Score} pts</span>
         </div>
       ))}
@@ -545,7 +550,7 @@ export default function MultiplayerRoom({ onLeave }) {
         </div>
 
         <div className="mp-play-sidebar">
-          <Scoreboard participants={room?.participants ?? []} currentUsername={currentUsername} />
+          <Scoreboard participants={room?.participants ?? []} currentUsername={currentUsername} showSubmissionStatus={true} />
         </div>
       </div>
     );

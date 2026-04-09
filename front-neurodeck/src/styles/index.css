@@ -552,6 +552,17 @@ a:hover {
   border-radius: 99px;
 }
 
+.mp-submission-status {
+  font-size: 1rem;
+  width: 1.5rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.mp-submission-status.pending {
+  opacity: 0.4;
+}
+
 /* ── Finished screen ── */
 .mp-finished {
   max-width: 520px;

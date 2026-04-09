@@ -90,10 +90,12 @@ class NextCardView(APIView):
             room.Status = "finished"
             room.CurrentCardIndex = next_index
             room.save(update_fields=["Status", "CurrentCardIndex"])
+            RoomParticipant.objects.filter(Room=room).update(CurrentCardSubmitted=False)
             return Response({"game_over": True})
 
         room.CurrentCardIndex = next_index
         room.save(update_fields=["CurrentCardIndex"])
+        RoomParticipant.objects.filter(Room=room).update(CurrentCardSubmitted=False)
 
         return Response({"current_round": next_index + 1, "total_rounds": room.TotalRounds})
 
@@ -205,6 +207,7 @@ class StartGameView(APIView):
         room.TotalRounds = total_rounds
         room.set_card_order(card_ids)
         room.save()
+        RoomParticipant.objects.filter(Room=room).update(CurrentCardSubmitted=False)
 
         serializer = MultiplayerRoomSerializer(room)
         return Response(serializer.data)
@@ -263,7 +266,9 @@ class SubmitAnswerView(APIView):
         is_correct = answer.strip().lower() == card.Answer.strip().lower()
         if is_correct:
             participant.Score += 1
-            participant.save()
+            participant.save(update_fields=["Score"])
+        participant.CurrentCardSubmitted = True
+        participant.save(update_fields=["CurrentCardSubmitted"])
 
         return Response({
             "is_correct": is_correct,
