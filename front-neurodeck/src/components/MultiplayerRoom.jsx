@@ -134,27 +134,7 @@ function FlashcardPanel({ card, onSubmit, onNext, isLoading, currentRound, total
         <p className="mp-question-text">{card.Question}</p>
       </div>
 
-      {feedback ? (
-        <div className={`mp-feedback ${feedback.is_correct ? 'mp-correct' : 'mp-incorrect'}`}>
-          <span className="mp-feedback-icon">{feedback.is_correct ? '✅' : '❌'}</span>
-          <span>
-            {feedback.is_correct
-              ? 'Correct!'
-              : `Incorrect — answer: ${feedback.correct_answer}`}
-          </span>
-          {/* "Next Card" only for host */}
-          {onNext && (
-            <button
-              id="mp-next-btn"
-              className="mp-btn mp-btn-primary mp-btn-full"
-              onClick={onNext}
-              disabled={isLoading}
-            >
-              {isLoading ? <span className="mp-spinner" /> : 'Next Card →'}
-            </button>
-          )}
-        </div>
-      ) : confirmPayload ? (
+      {confirmPayload ? (
         <div className="mp-confirm-dialog">
           <p className="mp-confirm-warning">⚠️ {confirmPayload.warning}</p>
           <p className="mp-confirm-hint">You can wait or skip anyway.</p>
@@ -176,6 +156,26 @@ function FlashcardPanel({ card, onSubmit, onNext, isLoading, currentRound, total
               Wait for Players
             </button>
           </div>
+        </div>
+      ) : feedback ? (
+        <div className={`mp-feedback ${feedback.is_correct ? 'mp-correct' : 'mp-incorrect'}`}>
+          <span className="mp-feedback-icon">{feedback.is_correct ? '✅' : '❌'}</span>
+          <span>
+            {feedback.is_correct
+              ? 'Correct!'
+              : `Incorrect — answer: ${feedback.correct_answer}`}
+          </span>
+          {/* "Next Card" only for host */}
+          {onNext && (
+            <button
+              id="mp-next-btn"
+              className="mp-btn mp-btn-primary mp-btn-full"
+              onClick={onNext}
+              disabled={isLoading}
+            >
+              {isLoading ? <span className="mp-spinner" /> : 'Next Card →'}
+            </button>
+          )}
         </div>
       ) : (
         <div className="mp-answer-area">
