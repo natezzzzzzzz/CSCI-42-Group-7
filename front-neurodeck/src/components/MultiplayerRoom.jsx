@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   createRoom as apiCreateRoom,
   joinRoom as apiJoinRoom,
+  leaveRoom as apiLeaveRoom,
   getRoomDetail,
   startGame as apiStartGame,
   endGame as apiEndGame,
@@ -46,7 +47,9 @@ function Scoreboard({ participants, currentUsername, showSubmissionStatus }) {
           </span>
           {showSubmissionStatus && (
             <span className={`mp-submission-status ${p.CurrentCardSubmitted ? 'done' : 'pending'}`}>
-              {p.CurrentCardSubmitted ? '✅' : '⏳'}
+              {p.CurrentCardSubmitted
+                ? (p.LastAnswerCorrect ? '✅' : '❌')
+                : '⏳'}
             </span>
           )}
           <span className="mp-scoreboard-pts">{p.Score} pts</span>
@@ -73,7 +76,7 @@ function ScorePop({ show }) {
 }
 
 // onNext is null for non-hosts — all host-only buttons are guarded with {onNext && ...}
-function FlashcardPanel({ card, onSubmit, onNext, isLoading, currentRound, totalRounds }) {
+function FlashcardPanel({ card, onSubmit, onNext, isLoading, currentRound, totalRounds, confirmPayload, onConfirm }) {
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState(null);
   const [showPop, setShowPop] = useState(false);
@@ -151,6 +154,29 @@ function FlashcardPanel({ card, onSubmit, onNext, isLoading, currentRound, total
             </button>
           )}
         </div>
+      ) : confirmPayload ? (
+        <div className="mp-confirm-dialog">
+          <p className="mp-confirm-warning">⚠️ {confirmPayload.warning}</p>
+          <p className="mp-confirm-hint">You can wait or skip anyway.</p>
+          <div className="mp-btn-row">
+            <button
+              id="mp-confirm-advance-btn"
+              className="mp-btn mp-btn-danger"
+              onClick={onConfirm}
+              disabled={isLoading}
+            >
+              Skip Anyway
+            </button>
+            <button
+              id="mp-cancel-advance-btn"
+              className="mp-btn mp-btn-ghost"
+              onClick={() => onNext && onNext()}
+              disabled={isLoading}
+            >
+              Wait for Players
+            </button>
+          </div>
+        </div>
       ) : (
         <div className="mp-answer-area">
           <input
@@ -210,6 +236,8 @@ export default function MultiplayerRoom({ onLeave }) {
   const [card, setCard] = useState(null);
   const [currentRound, setCurrentRound] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [syncWarning, setSyncWarning] = useState(null);
+  const [confirmPayload, setConfirmPayload] = useState(null); // { warning, unsynced_count } when host must confirm
 
   const pollRef = useRef(null);
   const roomRef = useRef(null);
@@ -301,7 +329,23 @@ export default function MultiplayerRoom({ onLeave }) {
     setIsLoading(true);
     try {
       const result = await apiNextCard(code);
+      if (result.blocking) {
+        setConfirmPayload({ warning: result.warning, unsynced_count: result.unsynced_count });
+        setIsLoading(false);
+        return;
+      }
       if (result.game_over) { setPhase('finished'); return; }
+      // Rapid-poll until all participants show CurrentCardSubmitted=True
+      const checkSync = async () => {
+        const data = await getRoomDetail(code);
+        const allSubmitted = data.participants?.every((p) => p.CurrentCardSubmitted);
+        if (allSubmitted) {
+          setSyncWarning(null);
+        } else {
+          setTimeout(checkSync, 500);
+        }
+      };
+      checkSync();
       await handleFetchCard(code);
     } catch (e) {
       setError(e.message ?? 'Failed to advance card.');
@@ -309,6 +353,33 @@ export default function MultiplayerRoom({ onLeave }) {
       setIsLoading(false);
     }
   }, [handleFetchCard]);
+
+  // Called when host clicks "Skip anyway" on the confirm dialog
+  const handleConfirmAdvance = async () => {
+    const code = roomRef.current?.RoomCode;
+    if (!code) return;
+    setConfirmPayload(null);
+    setIsLoading(true);
+    try {
+      const result = await apiNextCard(code, true); // pass confirm=true
+      if (result.game_over) { setPhase('finished'); return; }
+      const checkSync = async () => {
+        const data = await getRoomDetail(code);
+        const allSubmitted = data.participants?.every((p) => p.CurrentCardSubmitted);
+        if (allSubmitted) {
+          setSyncWarning(null);
+        } else {
+          setTimeout(checkSync, 500);
+        }
+      };
+      checkSync();
+      await handleFetchCard(code);
+    } catch (e) {
+      setError(e.message ?? 'Failed to advance card.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleCreateRoom = async () => {
     if (!selectedDeckId) return setError('Please select a deck.');
@@ -369,6 +440,15 @@ export default function MultiplayerRoom({ onLeave }) {
     } catch (e) {
       setError(e.message ?? 'Failed to end game.');
     }
+  };
+
+  const handleLeaveRoom = async () => {
+    const code = roomRef.current?.RoomCode;
+    if (code) {
+      try { await apiLeaveRoom(code); } catch { /* ignore */ }
+    }
+    clearInterval(pollRef.current);
+    onLeave();
   };
 
   const handleSubmitAnswer = async (answer) => {
@@ -509,7 +589,7 @@ export default function MultiplayerRoom({ onLeave }) {
 
         {error && <p className="mp-error">{error}</p>}
 
-        <button id="mp-leave-lobby-btn" className="mp-btn mp-btn-ghost mp-btn-full" onClick={onLeave}>
+        <button id="mp-leave-lobby-btn" className="mp-btn mp-btn-ghost mp-btn-full" onClick={handleLeaveRoom}>
           Leave Room
         </button>
       </div>
@@ -530,6 +610,12 @@ export default function MultiplayerRoom({ onLeave }) {
             )}
           </div>
 
+          {confirmPayload ? (
+            <div className="mp-sync-warning mp-sync-warning--confirm">{confirmPayload.warning}</div>
+          ) : syncWarning ? (
+            <div className="mp-sync-warning">{syncWarning}</div>
+          ) : null}
+
           {/* onNext is handleNextCard for host, null for non-hosts */}
           <FlashcardPanel
             card={card}
@@ -538,6 +624,8 @@ export default function MultiplayerRoom({ onLeave }) {
             isLoading={isLoading}
             currentRound={currentRound}
             totalRounds={room?.TotalRounds ?? 0}
+            confirmPayload={confirmPayload}
+            onConfirm={handleConfirmAdvance}
           />
 
           {isHost && (
@@ -580,7 +668,7 @@ export default function MultiplayerRoom({ onLeave }) {
         <button
           id="mp-back-to-menu-btn"
           className="mp-btn mp-btn-primary mp-btn-full"
-          onClick={onLeave}
+          onClick={handleLeaveRoom}
         >
           Back to Menu
         </button>
