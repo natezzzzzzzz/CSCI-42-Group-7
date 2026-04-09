@@ -86,7 +86,8 @@ class NextCardView(APIView):
         next_index = room.CurrentCardIndex + 1
 
         # Check for unsynced players — warn and BLOCK advance unless host explicitly confirms
-        unsynced_qs = RoomParticipant.objects.filter(Room=room, IsActive=True, CurrentCardSubmitted=False)
+        # Exclude the host from the unsynced check (host is a participant but shouldn't block themselves)
+        unsynced_qs = RoomParticipant.objects.filter(Room=room, IsActive=True, CurrentCardSubmitted=False).exclude(User=request.user)
         unsynced_count = unsynced_qs.count()
         confirm = request.data.get("confirm", False) in (True, "true", "1")
 

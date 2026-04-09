@@ -170,7 +170,7 @@ function FlashcardPanel({ card, onSubmit, onNext, isLoading, currentRound, total
             <button
               id="mp-cancel-advance-btn"
               className="mp-btn mp-btn-ghost"
-              onClick={() => onNext && onNext()}
+              onClick={() => setConfirmPayload(null)}
               disabled={isLoading}
             >
               Wait for Players
@@ -241,6 +241,7 @@ export default function MultiplayerRoom({ onLeave }) {
 
   const pollRef = useRef(null);
   const roomRef = useRef(null);
+  const checkSyncRef = useRef(null);
 
   useEffect(() => { roomRef.current = room; }, [room]);
   useEffect(() => () => clearInterval(pollRef.current), []);
@@ -276,6 +277,7 @@ export default function MultiplayerRoom({ onLeave }) {
     const code = roomCode ?? roomRef.current?.RoomCode;
     if (!code) return;
     setIsLoading(true);
+    setConfirmPayload(null); // clear any stale blocking state when loading a new card
     try {
       const data = await apiGetFlashcard(code);
       if (data.game_over) { setPhase('finished'); return; }
@@ -336,13 +338,16 @@ export default function MultiplayerRoom({ onLeave }) {
       }
       if (result.game_over) { setPhase('finished'); return; }
       // Rapid-poll until all participants show CurrentCardSubmitted=True
+      if (checkSyncRef.current) clearTimeout(checkSyncRef.current);
+      setSyncWarning(null);
       const checkSync = async () => {
         const data = await getRoomDetail(code);
         const allSubmitted = data.participants?.every((p) => p.CurrentCardSubmitted);
         if (allSubmitted) {
           setSyncWarning(null);
         } else {
-          setTimeout(checkSync, 500);
+          setSyncWarning('Waiting for other players to submit...');
+          checkSyncRef.current = setTimeout(checkSync, 500);
         }
       };
       checkSync();
@@ -363,13 +368,16 @@ export default function MultiplayerRoom({ onLeave }) {
     try {
       const result = await apiNextCard(code, true); // pass confirm=true
       if (result.game_over) { setPhase('finished'); return; }
+      if (checkSyncRef.current) clearTimeout(checkSyncRef.current);
+      setSyncWarning(null);
       const checkSync = async () => {
         const data = await getRoomDetail(code);
         const allSubmitted = data.participants?.every((p) => p.CurrentCardSubmitted);
         if (allSubmitted) {
           setSyncWarning(null);
         } else {
-          setTimeout(checkSync, 500);
+          setSyncWarning('Waiting for other players to submit...');
+          checkSyncRef.current = setTimeout(checkSync, 500);
         }
       };
       checkSync();
