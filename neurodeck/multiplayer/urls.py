@@ -2,13 +2,14 @@ from django.urls import path
 from .views import (
     CreateRoomView,
     JoinRoomView,
+    LeaveRoomView,
     RoomDetailView,
     StartGameView,
     EndGameView,
     GetFlashcardView,
     SubmitAnswerView,
     ListDecksForRoomView,
-    NextCardView,     
+    NextCardView,
 )
 
 urlpatterns = [
@@ -18,6 +19,7 @@ urlpatterns = [
     # Room lifecycle (non-code-scoped)
     path("create-room/", CreateRoomView.as_view(), name="create-room"),
     path("join-room/", JoinRoomView.as_view(), name="join-room"),
+    path("leave-room/", LeaveRoomView.as_view(), name="leave-room"),
     path("submit-answer/", SubmitAnswerView.as_view(), name="submit-answer"),
 
     # Room-scoped endpoints  (<room_code> is always uppercased in views)

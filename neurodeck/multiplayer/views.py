@@ -85,17 +85,30 @@ class NextCardView(APIView):
 
         next_index = room.CurrentCardIndex + 1
 
+        # Check for unsynced players — warn and BLOCK advance unless host explicitly confirms
+        unsynced_qs = RoomParticipant.objects.filter(Room=room, IsActive=True, CurrentCardSubmitted=False)
+        unsynced_count = unsynced_qs.count()
+        confirm = request.data.get("confirm", False) in (True, "true", "1")
+
+        if unsynced_count > 0 and not confirm:
+            return Response({
+                "detail": "waiting",
+                "warning": f"{unsynced_count} active player(s) haven't submitted yet.",
+                "unsynced_count": unsynced_count,
+                "blocking": True,
+            }, status=status.HTTP_200_OK)
+
         # Auto-finish when all rounds are exhausted
         if next_index >= room.TotalRounds:
             room.Status = "finished"
             room.CurrentCardIndex = next_index
             room.save(update_fields=["Status", "CurrentCardIndex"])
-            RoomParticipant.objects.filter(Room=room).update(CurrentCardSubmitted=False)
+            RoomParticipant.objects.filter(Room=room, IsActive=True).update(CurrentCardSubmitted=False)
             return Response({"game_over": True})
 
         room.CurrentCardIndex = next_index
         room.save(update_fields=["CurrentCardIndex"])
-        RoomParticipant.objects.filter(Room=room).update(CurrentCardSubmitted=False)
+        RoomParticipant.objects.filter(Room=room, IsActive=True).update(CurrentCardSubmitted=False)
 
         return Response({"current_round": next_index + 1, "total_rounds": room.TotalRounds})
 
@@ -153,6 +166,48 @@ class JoinRoomView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+class LeaveRoomView(APIView):
+    """
+    POST /multiplayer/leave-room/
+    Body: { room_code }
+    Marks the user as inactive in the room. If they are the host, migrates
+    host to the next earliest-joined participant. If no other active participants
+    remain, the room is marked finished.
+    """
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        room_code = request.data.get("room_code", "").strip().upper()
+        if not room_code:
+            return Response({"detail": "room_code is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        room = get_object_or_404(MultiplayerRoom, RoomCode=room_code)
+        participant = get_object_or_404(RoomParticipant, Room=room, User=request.user)
+
+        participant.IsActive = False
+        participant.save(update_fields=["IsActive"])
+
+        # If the leaving participant was the host, migrate host
+        if room.Host == request.user:
+            next_host = (
+                RoomParticipant.objects
+                .filter(Room=room, IsActive=True)
+                .exclude(User=request.user)
+                .order_by("JoinedAt")
+                .first()
+            )
+            if next_host:
+                room.Host = next_host.User
+                room.save(update_fields=["Host"])
+            else:
+                # No other active participants — mark room finished
+                room.Status = "finished"
+                room.save(update_fields=["Status"])
+
+        return Response({"detail": "Left room successfully."})
+
+
 class RoomDetailView(APIView):
     """
     GET /multiplayer/<room_code>/
@@ -207,7 +262,7 @@ class StartGameView(APIView):
         room.TotalRounds = total_rounds
         room.set_card_order(card_ids)
         room.save()
-        RoomParticipant.objects.filter(Room=room).update(CurrentCardSubmitted=False)
+        RoomParticipant.objects.filter(Room=room, IsActive=True).update(CurrentCardSubmitted=False)
 
         serializer = MultiplayerRoomSerializer(room)
         return Response(serializer.data)
@@ -268,7 +323,8 @@ class SubmitAnswerView(APIView):
             participant.Score += 1
             participant.save(update_fields=["Score"])
         participant.CurrentCardSubmitted = True
-        participant.save(update_fields=["CurrentCardSubmitted"])
+        participant.LastAnswerCorrect = is_correct
+        participant.save(update_fields=["CurrentCardSubmitted", "LastAnswerCorrect"])
 
         return Response({
             "is_correct": is_correct,
