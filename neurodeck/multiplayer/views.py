@@ -22,6 +22,82 @@ def generate_room_code():
             return code
 
 
+class GetFlashcardView(APIView):
+    """
+    GET /multiplayer/<room_code>/flashcard/
+    Returns the card at the CURRENT index without advancing it.
+    All players call this to read the same card.
+    Index is only advanced by NextCardView (host-only POST).
+    """
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, room_code):
+        room = get_object_or_404(MultiplayerRoom, RoomCode=room_code.upper())
+
+        if room.Status != "playing":
+            return Response(
+                {"detail": "The game hasn't started yet or has already finished."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        card_order = room.get_card_order()
+        if not card_order:
+            return Response({"detail": "No cards in this deck."}, status=status.HTTP_404_NOT_FOUND)
+
+        idx = room.CurrentCardIndex
+
+        if idx >= room.TotalRounds:
+            return Response(
+                {"detail": "All rounds complete.", "game_over": True},
+                status=status.HTTP_200_OK,
+            )
+
+        card_id = card_order[idx]
+        card = get_object_or_404(Flashcard, pk=card_id)
+
+        # NOTE: index is NOT advanced here — only NextCardView (host-only) does that.
+        return Response({
+            "CardID": card.CardID,
+            "Question": card.Question,
+            "current_round": idx + 1,
+            "total_rounds": room.TotalRounds,
+        })
+
+
+class NextCardView(APIView):
+    """
+    POST /multiplayer/<room_code>/next/
+    Host-only. Advances CurrentCardIndex by 1.
+    Non-hosts detect the change via polling RoomDetailView and re-fetch the card themselves.
+    """
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, room_code):
+        room = get_object_or_404(MultiplayerRoom, RoomCode=room_code.upper())
+
+        if room.Host != request.user:
+            return Response({"detail": "Only the host can advance cards."}, status=status.HTTP_403_FORBIDDEN)
+
+        if room.Status != "playing":
+            return Response({"detail": "Game is not active."}, status=status.HTTP_400_BAD_REQUEST)
+
+        next_index = room.CurrentCardIndex + 1
+
+        # Auto-finish when all rounds are exhausted
+        if next_index >= room.TotalRounds:
+            room.Status = "finished"
+            room.CurrentCardIndex = next_index
+            room.save(update_fields=["Status", "CurrentCardIndex"])
+            return Response({"game_over": True})
+
+        room.CurrentCardIndex = next_index
+        room.save(update_fields=["CurrentCardIndex"])
+
+        return Response({"current_round": next_index + 1, "total_rounds": room.TotalRounds})
+
+
 class CreateRoomView(APIView):
     """
     POST /multiplayer/create-room/
@@ -79,7 +155,7 @@ class RoomDetailView(APIView):
     """
     GET /multiplayer/<room_code>/
     Returns full room info including all participants and scores.
-    Used for polling.
+    Used for polling by all clients.
     """
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -159,56 +235,6 @@ class EndGameView(APIView):
 
         serializer = MultiplayerRoomSerializer(room)
         return Response(serializer.data)
-
-
-class GetFlashcardView(APIView):
-    """
-    GET /multiplayer/<room_code>/flashcard/
-    Returns the current card in the deterministic shuffled sequence.
-    Advances the index each call. When all rounds are exhausted, auto-finishes the game.
-    The Answer field is intentionally omitted — grading happens server-side.
-    """
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, room_code):
-        room = get_object_or_404(MultiplayerRoom, RoomCode=room_code.upper())
-
-        if room.Status != "playing":
-            return Response(
-                {"detail": "The game hasn't started yet or has already finished."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        card_order = room.get_card_order()
-        if not card_order:
-            return Response({"detail": "No cards in this deck."}, status=status.HTTP_404_NOT_FOUND)
-
-        idx = room.CurrentCardIndex
-
-        # All rounds completed — auto-finish
-        if idx >= room.TotalRounds:
-            room.Status = "finished"
-            room.save()
-            return Response(
-                {"detail": "All rounds complete.", "game_over": True},
-                status=status.HTTP_200_OK,
-            )
-
-        card_id = card_order[idx]
-        card = get_object_or_404(Flashcard, pk=card_id)
-
-        # Advance index for the next call
-        room.CurrentCardIndex = idx + 1
-        room.save(update_fields=["CurrentCardIndex"])
-
-        return Response({
-            "CardID": card.CardID,
-            "Question": card.Question,
-            "current_round": idx + 1,
-            "total_rounds": room.TotalRounds,
-            # Answer is intentionally hidden — evaluated server-side in SubmitAnswerView
-        })
 
 
 class SubmitAnswerView(APIView):

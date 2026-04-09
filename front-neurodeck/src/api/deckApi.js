@@ -130,6 +130,16 @@ export async function startGame(roomCode, rounds) {
   return handleResponse(res);
 }
 
+// ✅ Fixed: was using `api.post` (axios) but this file uses raw fetch
+export async function nextCard(roomCode) {
+  const res = await fetch(`${BASE_URL}/multiplayer/${roomCode}/next/`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({}),
+  });
+  return handleResponse(res);
+}
+
 export async function endGame(roomCode) {
   const res = await fetch(`${BASE_URL}/multiplayer/${roomCode}/end/`, {
     method: "POST",

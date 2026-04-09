@@ -8,6 +8,7 @@ from .views import (
     GetFlashcardView,
     SubmitAnswerView,
     ListDecksForRoomView,
+    NextCardView,     
 )
 
 urlpatterns = [
@@ -24,4 +25,5 @@ urlpatterns = [
     path("<str:room_code>/start/", StartGameView.as_view(), name="start-game"),
     path("<str:room_code>/end/", EndGameView.as_view(), name="end-game"),
     path("<str:room_code>/flashcard/", GetFlashcardView.as_view(), name="get-flashcard"),
+    path("<str:room_code>/next/", NextCardView.as_view(), name="next-card"),
 ]
