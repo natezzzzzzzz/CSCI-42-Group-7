@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'testapp',
     'deck',
     'multiplayer',
+    'achievements',
 ]
 AUTH_USER_MODEL = 'api.User'
 

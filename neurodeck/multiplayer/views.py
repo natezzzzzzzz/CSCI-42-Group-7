@@ -14,6 +14,57 @@ from .models import MultiplayerRoom, RoomParticipant
 from .serializers import AnswerSerializer, MultiplayerRoomSerializer
 
 
+def _finalize_game(room):
+    """
+    Create GameResult records and fire achievement events for all active participants.
+    Called when a multiplayer game ends (natural finish, manual end, or last player leaves).
+    Idempotent — skips if GameResults already exist for this room.
+    """
+    from achievements.engine import AchievementEngine, GameCompletedEvent
+    from achievements.models import GameResult
+
+    if GameResult.objects.filter(room=room).exists():
+        return
+
+    participants = RoomParticipant.objects.filter(
+        Room=room, IsActive=True
+    ).order_by("-Score")
+
+    if not participants.exists():
+        return
+
+    # Determine winner score for margin calculation
+    scores = [p.Score for p in participants]
+    top_score = scores[0] if scores else 0
+    second_score = scores[1] if len(scores) > 1 else 0
+
+    for idx, p in enumerate(participants, 1):
+        is_winner = idx == 1
+        margin = (top_score - second_score) if is_winner else 0
+
+        GameResult.objects.create(
+            user=p.User,
+            room=room,
+            score=p.Score,
+            total_questions=room.TotalRounds,
+            is_winner=is_winner,
+            position=idx,
+        )
+
+        AchievementEngine.process_event(
+            GameCompletedEvent(
+                user=p.User,
+                room=room,
+                score=p.Score,
+                total_questions=room.TotalRounds,
+                is_winner=is_winner,
+                position=idx,
+                participant_count=participants.count(),
+                margin=margin,
+            )
+        )
+
+
 def generate_room_code():
     """Generate a unique 6-character alphanumeric room code."""
     while True:
@@ -105,6 +156,7 @@ class NextCardView(APIView):
             room.CurrentCardIndex = next_index
             room.save(update_fields=["Status", "CurrentCardIndex"])
             RoomParticipant.objects.filter(Room=room, IsActive=True).update(CurrentCardSubmitted=False)
+            _finalize_game(room)
             return Response({"game_over": True})
 
         room.CurrentCardIndex = next_index
@@ -205,6 +257,7 @@ class LeaveRoomView(APIView):
                 # No other active participants — mark room finished
                 room.Status = "finished"
                 room.save(update_fields=["Status"])
+                _finalize_game(room)
 
         return Response({"detail": "Left room successfully."})
 
@@ -291,6 +344,7 @@ class EndGameView(APIView):
 
         room.Status = "finished"
         room.save()
+        _finalize_game(room)
 
         serializer = MultiplayerRoomSerializer(room)
         return Response(serializer.data)
@@ -327,10 +381,52 @@ class SubmitAnswerView(APIView):
         participant.LastAnswerCorrect = is_correct
         participant.save(update_fields=["CurrentCardSubmitted", "LastAnswerCorrect"])
 
+        # --- Achievement system integration ---
+        from achievements.engine import AchievementEngine, AnswerSubmittedEvent, CardStudiedEvent
+        from achievements.models import AnswerRecord
+
+        # Record the answer for history
+        AnswerRecord.objects.create(
+            user=request.user,
+            room=room,
+            card=card,
+            is_correct=is_correct,
+            answer_given=answer,
+            mode="multiplayer",
+        )
+
+        # Fire achievement events
+        all_unlocked = []
+        all_unlocked += AchievementEngine.process_event(
+            AnswerSubmittedEvent(
+                user=request.user,
+                is_correct=is_correct,
+                mode="multiplayer",
+                room=room,
+                card=card,
+            )
+        )
+        all_unlocked += AchievementEngine.process_event(
+            CardStudiedEvent(
+                user=request.user,
+                card=card,
+                deck=room.Deck,
+                mode="multiplayer",
+            )
+        )
+
         return Response({
             "is_correct": is_correct,
             "correct_answer": card.Answer,
             "score": participant.Score,
+            "new_achievements": [
+                {
+                    "name": ua.achievement.name,
+                    "description": ua.achievement.description,
+                    "icon": ua.achievement.icon,
+                }
+                for ua in all_unlocked
+            ],
         })
 
 

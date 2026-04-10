@@ -5,23 +5,28 @@ import RegisterPage from "./pages/RegisterPage";
 import MainMenu from "./pages/MainMenu";
 import DeckPage from "./pages/DeckPage";
 import MultiplayerPage from "./pages/MultiplayerPage";
+import { AchievementNotificationProvider } from "./components/AchievementToast";
 import './styles/App.css';
 import SoloGamePage from "./pages/SoloGamePage";
 import AchievementsPage from "./pages/AchievementsPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/main" element={<MainMenu />} />
-        <Route path="/decks" element={<DeckPage />} />
-        <Route path="/multiplayer" element={<MultiplayerPage />} />
-        <Route path="/solo/:deckId" element={<SoloGamePage />} />
-        <Route path="/achievements" element={<AchievementsPage />} />
-      </Routes>
-    </Router>
+    <AchievementNotificationProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/main" element={<MainMenu />} />
+          <Route path="/decks" element={<DeckPage />} />
+          <Route path="/multiplayer" element={<MultiplayerPage />} />
+          <Route path="/solo/:deckId" element={<SoloGamePage />} />
+          <Route path="/achievements" element={<AchievementsPage />} />
+          <Route path="/analytics" element={<AnalyticsPage />} />
+        </Routes>
+      </Router>
+    </AchievementNotificationProvider>
   );
 }
 

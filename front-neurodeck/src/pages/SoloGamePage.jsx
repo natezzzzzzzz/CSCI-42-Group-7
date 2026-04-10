@@ -1,10 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { fetchCards } from "../api/deckApi";
+import { fetchCards, reportSoloCardStudied, reportSoloSessionComplete } from "../api/deckApi";
+import { useAchievementNotify } from "../components/AchievementToast";
 
 export default function SoloGamePage() {
   const { deckId } = useParams();
   const navigate = useNavigate();
+  const notifyAchievement = useAchievementNotify();
+  const completionReported = useRef(false);
 
   const [cards, setCards] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -20,18 +23,18 @@ export default function SoloGamePage() {
   }, [deckId]);
 
   useEffect(() => {
-    if (cards.length > 0 && currentIndex === cards.length - 1) {
-      const saved = JSON.parse(localStorage.getItem("studyStats")) || {
-        cardsStudied: 0,
-        decksCompleted: 0,
-        streak: 0,
-      };
-
-      saved.decksCompleted += 1;
-
-      localStorage.setItem("studyStats", JSON.stringify(saved));
+    if (cards.length > 0 && currentIndex === cards.length - 1 && !completionReported.current) {
+      completionReported.current = true;
+      // Report deck completion to server
+      reportSoloSessionComplete(deckId, visitedCards.size, 0, 0)
+        .then((data) => {
+          if (data.new_achievements) {
+            data.new_achievements.forEach((a) => notifyAchievement(a));
+          }
+        })
+        .catch(() => {});
     }
-  }, [currentIndex]);
+  }, [currentIndex, cards.length, deckId, visitedCards.size, notifyAchievement]);
 
   const handleFlip = () => setIsFlipped(!isFlipped);
 
@@ -46,7 +49,15 @@ export default function SoloGamePage() {
         const updated = new Set(prev);
         updated.add(nextCardId);
 
-        updateStats(); // ✅ ONLY count new card
+        // Report card studied to server (fire-and-forget)
+        reportSoloCardStudied(nextCardId)
+          .then((data) => {
+            if (data.new_achievements) {
+              data.new_achievements.forEach((a) => notifyAchievement(a));
+            }
+          })
+          .catch(() => {});
+
         return updated;
       }
       return prev;
@@ -63,24 +74,12 @@ export default function SoloGamePage() {
   const handleRestart = () => {
     setIsFlipped(false);
     setCurrentIndex(0);
+    completionReported.current = false;
   };
 
   if (cards.length === 0) return <p>No flashcards in this deck yet!</p>;
 
   const current = cards[currentIndex];
-
-  const updateStats = () => {
-    const saved = JSON.parse(localStorage.getItem("studyStats")) || {
-      cardsStudied: 0,
-      decksCompleted: 0,
-      streak: 0,
-    };
-
-    saved.cardsStudied += 1;
-
-    localStorage.setItem("studyStats", JSON.stringify(saved));
-  };
-
 
   return (
     <div style={{ textAlign: "center", padding: "40px" }}>
@@ -125,19 +124,16 @@ export default function SoloGamePage() {
         Restart
       </button>
 
-      {/* nvgation buttons */}
+      {/* navigation buttons */}
       <div style={{ marginTop: "20px", display: "flex", justifyContent: "center", gap: "12px" }}>
         <button onClick={handlePrev} disabled={currentIndex === 0}>
           Previous
         </button>
-        
+
         <button onClick={handleNext} disabled={currentIndex === cards.length - 1}>
           Next
         </button>
       </div>
-
-      {/* back button */}
-      
 
     </div>
   );

@@ -117,3 +117,102 @@ def delete_card(request, deck_id, card_id):
 
     card.delete()
     return Response({"message": "Card deleted"}, status=200)
+
+
+# ─── Solo study tracking endpoints ─────────────────────────────────────────
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def solo_card_studied(request):
+    """
+    POST /deck/api/solo/card-studied/
+    Body: { card_id, is_correct (optional) }
+    Records that a card was studied and optionally an answer result.
+    """
+    card_id = request.data.get("card_id")
+    is_correct = request.data.get("is_correct")
+
+    from achievements.engine import AchievementEngine, CardStudiedEvent, AnswerSubmittedEvent
+
+    unlocked = []
+    unlocked += AchievementEngine.process_event(
+        CardStudiedEvent(user=request.user, card_id=card_id, mode="solo")
+    )
+
+    if is_correct is not None:
+        unlocked += AchievementEngine.process_event(
+            AnswerSubmittedEvent(
+                user=request.user, is_correct=is_correct, mode="solo"
+            )
+        )
+
+    return Response(
+        {
+            "new_achievements": [
+                {
+                    "name": ua.achievement.name,
+                    "description": ua.achievement.description,
+                    "icon": ua.achievement.icon,
+                }
+                for ua in unlocked
+            ]
+        }
+    )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def solo_session_complete(request):
+    """
+    POST /deck/api/solo/complete/
+    Body: { deck_id, cards_studied, correct_count, total_count }
+    Records completion of a solo study session.
+    """
+    deck_id = request.data.get("deck_id")
+    cards_studied = request.data.get("cards_studied", 0)
+    correct_count = request.data.get("correct_count", 0)
+    total_count = request.data.get("total_count", 0)
+
+    from achievements.engine import (
+        AchievementEngine,
+        CardStudiedEvent,
+        AnswerSubmittedEvent,
+        SoloSessionCompletedEvent,
+    )
+
+    # Fire card studied events for the bulk count
+    for _ in range(cards_studied):
+        AchievementEngine.process_event(
+            CardStudiedEvent(user=request.user, mode="solo")
+        )
+
+    # Fire answer events for the bulk counts
+    for _ in range(correct_count):
+        AchievementEngine.process_event(
+            AnswerSubmittedEvent(user=request.user, is_correct=True, mode="solo")
+        )
+    for _ in range(total_count - correct_count):
+        AchievementEngine.process_event(
+            AnswerSubmittedEvent(user=request.user, is_correct=False, mode="solo")
+        )
+
+    # Fire solo session complete event
+    new_achievements = AchievementEngine.process_event(
+        SoloSessionCompletedEvent(
+            user=request.user, deck_id=deck_id, cards_studied=cards_studied
+        )
+    )
+
+    return Response(
+        {
+            "new_achievements": [
+                {
+                    "name": ua.achievement.name,
+                    "description": ua.achievement.description,
+                    "icon": ua.achievement.icon,
+                }
+                for ua in new_achievements
+            ]
+        }
+    )

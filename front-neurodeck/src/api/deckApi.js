@@ -175,3 +175,62 @@ export async function leaveRoom(roomCode) {
   });
   return handleResponse(res);
 }
+
+// ─── Achievements API ────────────────────────────────────────────────────────
+
+export async function fetchAchievements() {
+  const res = await fetch(`${BASE_URL}/achievements/`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(res);
+}
+
+export async function fetchAchievementStats() {
+  const res = await fetch(`${BASE_URL}/achievements/stats/`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(res);
+}
+
+export async function fetchRecentUnlocks(limit = 5) {
+  const res = await fetch(`${BASE_URL}/achievements/recent/?limit=${limit}`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(res);
+}
+
+// ─── Solo Session API ───────────────────────────────────────────────────────
+
+export async function reportSoloCardStudied(cardId, isCorrect = null) {
+  const body = { card_id: cardId };
+  if (isCorrect !== null) body.is_correct = isCorrect;
+  const res = await fetch(`${BASE_URL}/deck/api/solo/card-studied/`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify(body),
+  });
+  return handleResponse(res);
+}
+
+export async function reportSoloSessionComplete(deckId, cardsStudied, correctCount, totalCount) {
+  const res = await fetch(`${BASE_URL}/deck/api/solo/complete/`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({
+      deck_id: deckId,
+      cards_studied: cardsStudied,
+      correct_count: correctCount,
+      total_count: totalCount,
+    }),
+  });
+  return handleResponse(res);
+}
+
+// ─── Analytics API ──────────────────────────────────────────────────────────
+
+export async function fetchActivityData() {
+  const res = await fetch(`${BASE_URL}/achievements/activity/`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(res);
+}

@@ -22,5 +22,6 @@ urlpatterns = [
     path('testapp/', include('testapp.urls')),
     path('deck/', include('deck.urls')),
     path('multiplayer/', include('multiplayer.urls')),
+    path('achievements/', include('achievements.urls')),
     path('api/', include('api.urls')),
 ]

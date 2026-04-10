@@ -33,7 +33,7 @@ function MainMenu({ setPage }) {
             </div>
           </div>
 
-          <div className="column">
+          <div className="column" onClick={() => navigate("/analytics")}>
             <div className="box shadow-sm">
               <h2 className="h6">Analytics</h2>
               <p className="text-small">View activity insights</p>

@@ -12,6 +12,7 @@ import {
   fetchMyDecks,
   nextCard as apiNextCard,
 } from '../api/deckApi';
+import { useAchievementNotify } from './AchievementToast';
 
 
 const getUsernameFromToken = () => {
@@ -221,6 +222,7 @@ function FlashcardPanel({ card, onSubmit, onNext, isLoading, currentRound, total
 export default function MultiplayerRoom({ onLeave }) {
   const navigate = useNavigate();
   const currentUsername = getUsernameFromToken();
+  const notifyAchievement = useAchievementNotify();
 
   const [phase, setPhase] = useState('entry');  // entry | lobby | playing | finished
   const [error, setError] = useState('');
@@ -466,6 +468,10 @@ export default function MultiplayerRoom({ onLeave }) {
         setStreak((s) => s + 1);
       } else {
         setStreak(0);
+      }
+      // Show achievement toasts if any were unlocked
+      if (data.new_achievements && data.new_achievements.length > 0) {
+        data.new_achievements.forEach((a) => notifyAchievement(a));
       }
       // Refresh room to get live scoreboard update
       const roomData = await getRoomDetail(roomRef.current.RoomCode);

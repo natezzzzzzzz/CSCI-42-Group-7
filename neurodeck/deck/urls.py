@@ -10,4 +10,6 @@ urlpatterns = [
     path('api/decks/<str:deck_id>/cards/create/', views.create_card),
     path('api/decks/<str:deck_id>/cards/<int:card_id>/update/', views.update_card),
     path('api/decks/<str:deck_id>/cards/<int:card_id>/delete/', views.delete_card),
+    path('api/solo/card-studied/', views.solo_card_studied),
+    path('api/solo/complete/', views.solo_session_complete),
 ]
