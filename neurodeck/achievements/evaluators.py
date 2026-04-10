@@ -1,7 +1,9 @@
 from .engine import (
     AchievementEngine,
     AnswerSubmittedEvent,
+    CardMasteredEvent,
     GameCompletedEvent,
+    SoloSessionCompletedEvent,
     register_evaluator,
 )
 
@@ -81,4 +83,25 @@ def eval_winner_by_margin(user, stats, event, achievement):
         return event.extra.get("is_winner", False) and event.extra.get(
             "margin", 0
         ) >= achievement.threshold
+    return False
+
+
+@register_evaluator("cards_mastered")
+def eval_cards_mastered(user, stats, event, achievement):
+    """Number of cards mastered through spaced repetition."""
+    return stats.cards_mastered >= achievement.threshold
+
+
+@register_evaluator("spaced_repetition_reviews")
+def eval_sr_reviews(user, stats, event, achievement):
+    """Number of spaced repetition reviews completed."""
+    return stats.spaced_repetition_reviews >= achievement.threshold
+
+
+@register_evaluator("late_night_study")
+def eval_late_night_study(user, stats, event, achievement):
+    """Complete a solo session between midnight and 5 AM."""
+    if isinstance(event, SoloSessionCompletedEvent):
+        hour = event.timestamp.hour
+        return 0 <= hour < 5
     return False

@@ -71,6 +71,8 @@ class UserStats(models.Model):
     last_study_date = models.DateField(null=True, blank=True)
     consecutive_study_days = models.PositiveIntegerField(default=0)
     best_consecutive_study_days = models.PositiveIntegerField(default=0)
+    spaced_repetition_reviews = models.PositiveIntegerField(default=0)
+    cards_mastered = models.PositiveIntegerField(default=0)
 
     class Meta:
         verbose_name_plural = "user stats"

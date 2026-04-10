@@ -22,6 +22,8 @@ def _compute_progress(achievement, stats, is_unlocked):
         "multiplayer_games_played": "multiplayer_games_played",
         "solo_sessions": "solo_sessions_completed",
         "study_days": "best_consecutive_study_days",
+        "cards_mastered": "cards_mastered",
+        "spaced_repetition_reviews": "spaced_repetition_reviews",
     }
     field = mapping.get(achievement.criteria)
     if field:
@@ -110,6 +112,8 @@ def user_stats(request):
             "multiplayer_games_played": stats.multiplayer_games_played,
             "multiplayer_games_won": stats.multiplayer_games_won,
             "solo_sessions_completed": stats.solo_sessions_completed,
+            "spaced_repetition_reviews": stats.spaced_repetition_reviews,
+            "cards_mastered": stats.cards_mastered,
             "accuracy_percent": round(accuracy, 1),
         }
     )

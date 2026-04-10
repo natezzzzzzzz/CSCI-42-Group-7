@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { updateDeck, deleteDeck } from "../api/deckApi";
 import CardEditor from "./CardEditor";
-import { useNavigate } from "react-router-dom";
+import DeckSettingsModal from "./DeckSettingsModal";
+import CustomStudyModal from "./CustomStudyModal";
 
 export default function DeckItem({ deck, onDelete, onUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
   const [showCards, setShowCards] = useState(false);
-  const navigate = useNavigate();
+  const [showSettings, setShowSettings] = useState(false);
+  const [showStudy, setShowStudy] = useState(false);
 
   const [deckName, setDeckName] = useState(deck.DeckName);
   const [category, setCategory] = useState(deck.Category || "");
@@ -96,8 +98,13 @@ export default function DeckItem({ deck, onDelete, onUpdate }) {
             <button className="button is-small is-danger" onClick={handleDelete}>
               Delete
             </button>
-            <button className="button is-small is-link" onClick={() => navigate(`/solo/${deck.DeckID}`)}>
+            <button className="button is-small is-link" onClick={() => setShowStudy(true)}>
               Play
+            </button>
+            <button className="button is-small is-light" onClick={() => setShowSettings(true)} title="Deck Settings">
+              <span className="icon is-small">
+                <i className="fas fa-cog"></i>
+              </span>
             </button>
           </div>
         </>
@@ -108,6 +115,21 @@ export default function DeckItem({ deck, onDelete, onUpdate }) {
         <div className="mt-3">
           <CardEditor deckId={deck.DeckID} />
         </div>
+      )}
+
+      {/* ── Modals ── */}
+      {showSettings && (
+        <DeckSettingsModal
+          deckId={deck.DeckID}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
+      {showStudy && (
+        <CustomStudyModal
+          deckId={deck.DeckID}
+          deckName={deck.DeckName}
+          onClose={() => setShowStudy(false)}
+        />
       )}
     </div>
   );
