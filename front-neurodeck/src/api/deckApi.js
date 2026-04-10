@@ -21,7 +21,9 @@ async function handleResponse(res) {
 }
 
 export async function fetchDecks() {
-  const res = await fetch(`${BASE_URL}/deck/api/decks/`);
+  const res = await fetch(`${BASE_URL}/deck/api/decks/`, {
+    headers: authHeaders(),
+  });
   return handleResponse(res);
 }
 
@@ -130,6 +132,16 @@ export async function startGame(roomCode, rounds) {
   return handleResponse(res);
 }
 
+// ✅ Fixed: was using `api.post` (axios) but this file uses raw fetch
+export async function nextCard(roomCode, confirm = false) {
+  const res = await fetch(`${BASE_URL}/multiplayer/${roomCode}/next/`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ confirm }),
+  });
+  return handleResponse(res);
+}
+
 export async function endGame(roomCode) {
   const res = await fetch(`${BASE_URL}/multiplayer/${roomCode}/end/`, {
     method: "POST",
@@ -151,6 +163,15 @@ export async function submitAnswer(roomCode, cardId, answer) {
     method: "POST",
     headers: authHeaders(),
     body: JSON.stringify({ room_code: roomCode, card_id: cardId, answer }),
+  });
+  return handleResponse(res);
+}
+
+export async function leaveRoom(roomCode) {
+  const res = await fetch(`${BASE_URL}/multiplayer/leave-room/`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ room_code: roomCode }),
   });
   return handleResponse(res);
 }

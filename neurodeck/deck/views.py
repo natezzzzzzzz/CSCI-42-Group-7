@@ -6,8 +6,9 @@ from .serializers import DeckSerializer, FlashcardSerializer
 
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def deck_list(request):
-    decks = Deck.objects.all()
+    decks = Deck.objects.filter(UserID=request.user)
     serializer = DeckSerializer(decks, many=True)
     return Response(serializer.data)
 

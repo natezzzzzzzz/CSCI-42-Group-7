@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import {
   createRoom as apiCreateRoom,
   joinRoom as apiJoinRoom,
+  leaveRoom as apiLeaveRoom,
   getRoomDetail,
   startGame as apiStartGame,
   endGame as apiEndGame,
   getFlashcard as apiGetFlashcard,
   submitAnswer as apiSubmitAnswer,
   fetchMyDecks,
+  nextCard as apiNextCard,
 } from '../api/deckApi';
 
 
@@ -26,7 +28,7 @@ const getUsernameFromToken = () => {
 const MEDALS = ['🥇', '🥈', '🥉'];
 
 
-function Scoreboard({ participants, currentUsername }) {
+function Scoreboard({ participants, currentUsername, showSubmissionStatus }) {
   const sorted = [...participants].sort((a, b) => b.Score - a.Score);
   return (
     <div className="mp-scoreboard">
@@ -43,6 +45,13 @@ function Scoreboard({ participants, currentUsername }) {
             {p.username}
             {p.username === currentUsername && <span className="mp-you-badge">you</span>}
           </span>
+          {showSubmissionStatus && (
+            <span className={`mp-submission-status ${p.CurrentCardSubmitted ? 'done' : 'pending'}`}>
+              {p.CurrentCardSubmitted
+                ? (p.LastAnswerCorrect ? '✅' : '❌')
+                : '⏳'}
+            </span>
+          )}
           <span className="mp-scoreboard-pts">{p.Score} pts</span>
         </div>
       ))}
@@ -66,13 +75,14 @@ function ScorePop({ show }) {
   return show ? <div className="mp-score-pop">+1</div> : null;
 }
 
-function FlashcardPanel({ card, onSubmit, onNext, isLoading, currentRound, totalRounds }) {
+// onNext is null for non-hosts — all host-only buttons are guarded with {onNext && ...}
+function FlashcardPanel({ card, onSubmit, onNext, isLoading, currentRound, totalRounds, confirmPayload, onConfirm }) {
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState(null);
   const [showPop, setShowPop] = useState(false);
   const inputRef = useRef(null);
 
-  // Reset state whenever a new card arrives
+  // Reset state whenever the card changes
   useEffect(() => {
     setAnswer('');
     setFeedback(null);
@@ -99,9 +109,14 @@ function FlashcardPanel({ card, onSubmit, onNext, isLoading, currentRound, total
   if (!card) {
     return (
       <div className="mp-card mp-card-empty">
-        <button className="mp-btn mp-btn-primary" onClick={onNext} disabled={isLoading} id="mp-get-card-btn">
-          {isLoading ? <span className="mp-spinner" /> : 'Get First Card →'}
-        </button>
+        {onNext ? (
+          // Host sees a button while the first card is loading
+          <button className="mp-btn mp-btn-primary" onClick={onNext} disabled={isLoading} id="mp-get-card-btn">
+            {isLoading ? <span className="mp-spinner" /> : 'Get First Card →'}
+          </button>
+        ) : (
+          <p className="mp-waiting-text">⏳ Waiting for host to start the round…</p>
+        )}
       </div>
     );
   }
@@ -119,7 +134,30 @@ function FlashcardPanel({ card, onSubmit, onNext, isLoading, currentRound, total
         <p className="mp-question-text">{card.Question}</p>
       </div>
 
-      {feedback ? (
+      {confirmPayload ? (
+        <div className="mp-confirm-dialog">
+          <p className="mp-confirm-warning">⚠️ {confirmPayload.warning}</p>
+          <p className="mp-confirm-hint">You can wait or skip anyway.</p>
+          <div className="mp-btn-row">
+            <button
+              id="mp-confirm-advance-btn"
+              className="mp-btn mp-btn-danger"
+              onClick={onConfirm}
+              disabled={isLoading}
+            >
+              Skip Anyway
+            </button>
+            <button
+              id="mp-cancel-advance-btn"
+              className="mp-btn mp-btn-ghost"
+              onClick={() => setConfirmPayload(null)}
+              disabled={isLoading}
+            >
+              Wait for Players
+            </button>
+          </div>
+        </div>
+      ) : feedback ? (
         <div className={`mp-feedback ${feedback.is_correct ? 'mp-correct' : 'mp-incorrect'}`}>
           <span className="mp-feedback-icon">{feedback.is_correct ? '✅' : '❌'}</span>
           <span>
@@ -127,6 +165,17 @@ function FlashcardPanel({ card, onSubmit, onNext, isLoading, currentRound, total
               ? 'Correct!'
               : `Incorrect — answer: ${feedback.correct_answer}`}
           </span>
+          {/* "Next Card" only for host */}
+          {onNext && (
+            <button
+              id="mp-next-btn"
+              className="mp-btn mp-btn-primary mp-btn-full"
+              onClick={onNext}
+              disabled={isLoading}
+            >
+              {isLoading ? <span className="mp-spinner" /> : 'Next Card →'}
+            </button>
+          )}
         </div>
       ) : (
         <div className="mp-answer-area">
@@ -150,27 +199,19 @@ function FlashcardPanel({ card, onSubmit, onNext, isLoading, currentRound, total
             >
               Submit
             </button>
-            <button
-              id="mp-skip-btn"
-              className="mp-btn mp-btn-ghost"
-              onClick={onNext}
-              disabled={isLoading}
-            >
-              Skip
-            </button>
+            {/* "Skip" only for host */}
+            {onNext && (
+              <button
+                id="mp-skip-btn"
+                className="mp-btn mp-btn-ghost"
+                onClick={onNext}
+                disabled={isLoading}
+              >
+                Skip
+              </button>
+            )}
           </div>
         </div>
-      )}
-
-      {feedback && (
-        <button
-          id="mp-next-btn"
-          className="mp-btn mp-btn-primary mp-btn-full"
-          onClick={onNext}
-          disabled={isLoading}
-        >
-          {isLoading ? <span className="mp-spinner" /> : 'Next Card →'}
-        </button>
       )}
     </div>
   );
@@ -195,14 +236,16 @@ export default function MultiplayerRoom({ onLeave }) {
   const [card, setCard] = useState(null);
   const [currentRound, setCurrentRound] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [syncWarning, setSyncWarning] = useState(null);
+  const [confirmPayload, setConfirmPayload] = useState(null); // { warning, unsynced_count } when host must confirm
 
   const pollRef = useRef(null);
   const roomRef = useRef(null);
+  const checkSyncRef = useRef(null);
 
   useEffect(() => { roomRef.current = room; }, [room]);
   useEffect(() => () => clearInterval(pollRef.current), []);
 
-  // Load user's decks on mount for the picker
   useEffect(() => {
     setDecksLoading(true);
     fetchMyDecks()
@@ -210,35 +253,141 @@ export default function MultiplayerRoom({ onLeave }) {
         setMyDecks(data);
         if (data.length > 0) setSelectedDeckId(data[0].DeckID);
       })
-      .catch(() => {/* silently ignore — user may not be the host */ })
+      .catch(() => {})
       .finally(() => setDecksLoading(false));
   }, []);
 
   const clearError = () => setError('');
 
+  // FIX: No longer depends on `phase` — uses functional setState to avoid stale closures
+  // inside the polling interval.
   const applyRoomUpdate = useCallback((data) => {
     setRoom(data);
     roomRef.current = data;
-    if (data.Status === 'playing' && phase !== 'playing') setPhase('playing');
-    if (data.Status === 'finished') setPhase('finished');
-  }, [phase]);
+    setPhase((prev) => {
+      if (data.Status === 'playing' && prev === 'lobby') return 'playing';
+      if (data.Status === 'finished') return 'finished';
+      return prev;
+    });
+  }, []);
 
+  // Safe for all players — reads the current card WITHOUT advancing the index.
+  // The server's GetFlashcardView is read-only; only NextCardView (host POST) mutates the index.
+  const handleFetchCard = useCallback(async (roomCode) => {
+    const code = roomCode ?? roomRef.current?.RoomCode;
+    if (!code) return;
+    setIsLoading(true);
+    setConfirmPayload(null); // clear any stale blocking state when loading a new card
+    try {
+      const data = await apiGetFlashcard(code);
+      if (data.game_over) { setPhase('finished'); return; }
+      setCard(data);
+      setCurrentRound(data.current_round ?? 0);
+    } catch (e) {
+      setError(e.message ?? 'Failed to fetch card.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
+  // Polls room detail every 3 seconds.
+  // When CurrentCardIndex changes (host advanced via NextCardView), all clients re-fetch
+  // the card at the new index. This is the ONLY trigger for non-hosts to advance.
   const startPolling = useCallback((roomCode) => {
     if (pollRef.current) clearInterval(pollRef.current);
+
+    // Seed with -1 so that index=0 (game just started) is always treated as "changed"
+    // and both host and non-hosts auto-load the first card as soon as polling sees
+    // Status = 'playing'.
+    let lastCardIndex = -1;
+
     pollRef.current = setInterval(async () => {
       try {
         const data = await getRoomDetail(roomCode);
         setRoom(data);
         roomRef.current = data;
-        if (data.Status === 'playing') setPhase((prev) => prev === 'lobby' ? 'playing' : prev);
-        if (data.Status === 'finished') setPhase('finished');
-      } catch {
-        // Silently ignore transient polling errors
-      }
-    }, 3000);
-  }, []);
 
+        if (data.Status === 'playing') {
+          // Transition lobby → playing for non-hosts when the host starts the game
+          setPhase((prev) => prev === 'lobby' ? 'playing' : prev);
+
+          // Only fetch the card when the index has actually changed (host called /next/)
+          if (data.CurrentCardIndex !== lastCardIndex) {
+            lastCardIndex = data.CurrentCardIndex;
+            handleFetchCard(roomCode);
+          }
+        }
+
+        if (data.Status === 'finished') setPhase('finished');
+      } catch { /* ignore transient network errors */ }
+    }, 3000);
+  }, [handleFetchCard]);
+
+  // Host-only: advances the index on the server then immediately fetches the new card
+  // for the host. Non-hosts will pick up the change on their next poll tick (≤3 s).
+  const handleNextCard = useCallback(async () => {
+    const code = roomRef.current?.RoomCode;
+    if (!code) return;
+    setIsLoading(true);
+    try {
+      const result = await apiNextCard(code);
+      if (result.blocking) {
+        setConfirmPayload({ warning: result.warning, unsynced_count: result.unsynced_count });
+        setIsLoading(false);
+        return;
+      }
+      if (result.game_over) { setPhase('finished'); return; }
+      // Rapid-poll until all participants show CurrentCardSubmitted=True
+      if (checkSyncRef.current) clearTimeout(checkSyncRef.current);
+      setSyncWarning(null);
+      const checkSync = async () => {
+        const data = await getRoomDetail(code);
+        const allSubmitted = data.participants?.every((p) => p.CurrentCardSubmitted);
+        if (allSubmitted) {
+          setSyncWarning(null);
+        } else {
+          setSyncWarning('Waiting for other players to submit...');
+          checkSyncRef.current = setTimeout(checkSync, 500);
+        }
+      };
+      checkSync();
+      await handleFetchCard(code);
+    } catch (e) {
+      setError(e.message ?? 'Failed to advance card.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [handleFetchCard]);
+
+  // Called when host clicks "Skip anyway" on the confirm dialog
+  const handleConfirmAdvance = async () => {
+    const code = roomRef.current?.RoomCode;
+    if (!code) return;
+    setConfirmPayload(null);
+    setIsLoading(true);
+    try {
+      const result = await apiNextCard(code, true); // pass confirm=true
+      if (result.game_over) { setPhase('finished'); return; }
+      if (checkSyncRef.current) clearTimeout(checkSyncRef.current);
+      setSyncWarning(null);
+      const checkSync = async () => {
+        const data = await getRoomDetail(code);
+        const allSubmitted = data.participants?.every((p) => p.CurrentCardSubmitted);
+        if (allSubmitted) {
+          setSyncWarning(null);
+        } else {
+          setSyncWarning('Waiting for other players to submit...');
+          checkSyncRef.current = setTimeout(checkSync, 500);
+        }
+      };
+      checkSync();
+      await handleFetchCard(code);
+    } catch (e) {
+      setError(e.message ?? 'Failed to advance card.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleCreateRoom = async () => {
     if (!selectedDeckId) return setError('Please select a deck.');
@@ -265,9 +414,9 @@ export default function MultiplayerRoom({ onLeave }) {
       const data = await apiJoinRoom(code);
       applyRoomUpdate(data);
       setPhase('lobby');
-      startPolling(code);
+      startPolling(data.RoomCode);
     } catch (e) {
-      setError(e.message ?? 'Room not found or already finished.');
+      setError(e.message ?? 'Failed to join room.');
     } finally {
       setIsLoading(false);
     }
@@ -280,7 +429,8 @@ export default function MultiplayerRoom({ onLeave }) {
       const data = await apiStartGame(roomRef.current.RoomCode, selectedRounds);
       applyRoomUpdate(data);
       setPhase('playing');
-      setCurrentRound(0);
+      // FIX: Immediately fetch the first card for the host instead of waiting for the
+      // next poll tick. Non-hosts pick it up via polling (CurrentCardIndex 0 !== -1).
       await handleFetchCard(data.RoomCode);
     } catch (e) {
       setError(e.message ?? 'Failed to start game.');
@@ -300,23 +450,13 @@ export default function MultiplayerRoom({ onLeave }) {
     }
   };
 
-  const handleFetchCard = async (roomCode) => {
-    const code = roomCode ?? roomRef.current?.RoomCode;
-    if (!code) return;
-    setIsLoading(true);
-    try {
-      const data = await apiGetFlashcard(code);
-      if (data.game_over) {
-        setPhase('finished');
-        return;
-      }
-      setCard(data);
-      setCurrentRound(data.current_round ?? 0);
-    } catch (e) {
-      setError(e.message ?? 'Failed to fetch card.');
-    } finally {
-      setIsLoading(false);
+  const handleLeaveRoom = async () => {
+    const code = roomRef.current?.RoomCode;
+    if (code) {
+      try { await apiLeaveRoom(code); } catch { /* ignore */ }
     }
+    clearInterval(pollRef.current);
+    onLeave();
   };
 
   const handleSubmitAnswer = async (answer) => {
@@ -327,6 +467,7 @@ export default function MultiplayerRoom({ onLeave }) {
       } else {
         setStreak(0);
       }
+      // Refresh room to get live scoreboard update
       const roomData = await getRoomDetail(roomRef.current.RoomCode);
       setRoom(roomData);
       return data;
@@ -336,7 +477,6 @@ export default function MultiplayerRoom({ onLeave }) {
     }
   };
 
-
   const isHost = room?.host_username === currentUsername;
   const myParticipant = room?.participants?.find((p) => p.username === currentUsername);
 
@@ -344,7 +484,6 @@ export default function MultiplayerRoom({ onLeave }) {
   if (phase === 'entry') {
     return (
       <div className="mp-entry">
-        {/* Create Room */}
         <div className="mp-panel">
           <h2 className="mp-panel-title">🚀 Create a Room</h2>
 
@@ -392,7 +531,6 @@ export default function MultiplayerRoom({ onLeave }) {
 
         <div className="mp-divider"><span>or</span></div>
 
-        {/* Join Room */}
         <div className="mp-panel">
           <h2 className="mp-panel-title">🔗 Join a Room</h2>
           <label className="mp-label" htmlFor="mp-join-input">Room Code</label>
@@ -419,7 +557,6 @@ export default function MultiplayerRoom({ onLeave }) {
       </div>
     );
   }
-
 
   if (phase === 'lobby') {
     return (
@@ -460,7 +597,7 @@ export default function MultiplayerRoom({ onLeave }) {
 
         {error && <p className="mp-error">{error}</p>}
 
-        <button id="mp-leave-lobby-btn" className="mp-btn mp-btn-ghost mp-btn-full" onClick={onLeave}>
+        <button id="mp-leave-lobby-btn" className="mp-btn mp-btn-ghost mp-btn-full" onClick={handleLeaveRoom}>
           Leave Room
         </button>
       </div>
@@ -470,7 +607,6 @@ export default function MultiplayerRoom({ onLeave }) {
   if (phase === 'playing') {
     return (
       <div className="mp-playing">
-        {/* Left: card area */}
         <div className="mp-play-main">
           <div className="mp-play-header">
             <div className="mp-room-tag">Room: <strong>{room?.RoomCode}</strong></div>
@@ -482,13 +618,22 @@ export default function MultiplayerRoom({ onLeave }) {
             )}
           </div>
 
+          {confirmPayload ? (
+            <div className="mp-sync-warning mp-sync-warning--confirm">{confirmPayload.warning}</div>
+          ) : syncWarning ? (
+            <div className="mp-sync-warning">{syncWarning}</div>
+          ) : null}
+
+          {/* onNext is handleNextCard for host, null for non-hosts */}
           <FlashcardPanel
             card={card}
             onSubmit={handleSubmitAnswer}
-            onNext={() => handleFetchCard()}
+            onNext={isHost ? handleNextCard : null}
             isLoading={isLoading}
             currentRound={currentRound}
             totalRounds={room?.TotalRounds ?? 0}
+            confirmPayload={confirmPayload}
+            onConfirm={handleConfirmAdvance}
           />
 
           {isHost && (
@@ -500,19 +645,17 @@ export default function MultiplayerRoom({ onLeave }) {
           {error && <p className="mp-error">{error}</p>}
         </div>
 
-        {/* Right: scoreboard */}
         <div className="mp-play-sidebar">
-          <Scoreboard participants={room?.participants ?? []} currentUserId={currentUsername} />
+          <Scoreboard participants={room?.participants ?? []} currentUsername={currentUsername} showSubmissionStatus={true} />
         </div>
       </div>
     );
   }
 
-
   if (phase === 'finished') {
     const sorted = [...(room?.participants ?? [])].sort((a, b) => b.Score - a.Score);
     const winner = sorted[0];
-    const isWinner = winner?.user_id === currentUsername;
+    const isWinner = winner?.username === currentUsername;
 
     return (
       <div className="mp-finished">
@@ -528,12 +671,12 @@ export default function MultiplayerRoom({ onLeave }) {
           )}
         </div>
 
-        <Scoreboard participants={room?.participants ?? []} currentUserId={currentUsername} />
+        <Scoreboard participants={room?.participants ?? []} currentUsername={currentUsername} />
 
         <button
           id="mp-back-to-menu-btn"
           className="mp-btn mp-btn-primary mp-btn-full"
-          onClick={onLeave}
+          onClick={handleLeaveRoom}
         >
           Back to Menu
         </button>

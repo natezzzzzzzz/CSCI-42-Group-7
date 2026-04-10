@@ -9,7 +9,7 @@ class RoomParticipantSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RoomParticipant
-        fields = ["user_id", "username", "Score", "JoinedAt"]
+        fields = ["user_id", "username", "Score", "JoinedAt", "CurrentCardSubmitted", "IsActive", "LastAnswerCorrect"]
 
 
 class MultiplayerRoomSerializer(serializers.ModelSerializer):
