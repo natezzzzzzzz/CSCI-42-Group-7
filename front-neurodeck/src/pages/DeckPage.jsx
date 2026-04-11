@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import DeckForm from "../components/DeckForm";
 import DeckList from "../components/DeckList";
 import { fetchDecks } from "../api/deckApi";
 
 export default function DeckPage() {
+  const navigate = useNavigate();
   const [decks, setDecks] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
 
-  // initial load
   useEffect(() => {
     const load = async () => {
       const data = await fetchDecks();
@@ -17,9 +18,8 @@ export default function DeckPage() {
     load();
   }, []);
 
-  // called by DeckForm when a new deck is created
   const handleDeckCreated = (newDeck) => {
-    setDecks(prev => [newDeck, ...prev]); // prepend new deck
+    setDecks(prev => [newDeck, ...prev]);
   };
 
   const handleDeckUpdate = (updatedDeck) => {
@@ -31,21 +31,30 @@ export default function DeckPage() {
   };
 
   return (
-    <div>
-      <h2>My Decks</h2>
+    <div className="container mp-page">
+      <div className="mp-page-header">
+        <button className="mp-back-btn" onClick={() => navigate("/main")}> ← Back to Menu </button>
+        
+        <div className="mp-page-title">
+          <h1 className="h4">My Decks</h1>
+          <p className="tagline mp-subtitle">Create and manage your flashcard decks.</p>
+        </div>
+      </div>
 
       <DeckForm onDeckCreated={handleDeckCreated} />
 
-      {/* Search / filter inputs */}
-      <div style={{ marginBottom: "20px" }}>
+      <div className="mp-panel" style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
         <input
+          className="mp-input"
+          style={{ marginBottom: 0 }}
           type="text"
           placeholder="Search by deck name..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          style={{ marginRight: "10px" }}
         />
         <input
+          className="mp-input"
+          style={{ marginBottom: 0 }}
           type="text"
           placeholder="Filter by category..."
           value={filterCategory}

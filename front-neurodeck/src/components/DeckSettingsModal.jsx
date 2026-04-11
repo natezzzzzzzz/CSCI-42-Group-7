@@ -36,69 +36,78 @@ export default function DeckSettingsModal({ deckId, onClose }) {
   };
 
   return (
-    <div className="modal is-active">
-      <div className="modal-background" onClick={onClose}></div>
-      <div className="modal-card">
-        <header className="modal-card-head">
-          <p className="modal-card-title">Deck Settings</p>
-          <button className="delete" aria-label="close" onClick={onClose}></button>
-        </header>
-        <section className="modal-card-body">
-          {error && <p className="help is-danger">{error}</p>}
+    <div className="ds-overlay">
+      {/* backdrop */}
+      <div className="ds-backdrop" onClick={onClose} />
 
-          <div className="field">
-            <label className="label is-small">Max New Cards / Day</label>
-            <div className="control">
-              <input
-                className="input is-small"
-                type="number"
-                min="0"
-                value={maxNew}
-                onChange={(e) => setMaxNew(parseInt(e.target.value) || 0)}
-              />
-            </div>
-            <p className="help">Brand-new cards introduced per day</p>
-          </div>
+      {/* modal card */}
+      <div className="mp-panel ds-modal">
 
-          <div className="field">
-            <label className="label is-small">Max Learning Cards / Day</label>
-            <div className="control">
-              <input
-                className="input is-small"
-                type="number"
-                min="0"
-                value={maxLearning}
-                onChange={(e) => setMaxLearning(parseInt(e.target.value) || 0)}
-              />
-            </div>
-            <p className="help">Cards in the learning phase per day</p>
-          </div>
+        {/* header */}
+        <div className="ds-modal-header">
+          <p className="mp-panel-title ds-modal-title">Deck Settings</p>
+          <button className="mp-btn mp-btn-ghost ds-close-btn" onClick={onClose}>✕</button>
+        </div>
 
-          <div className="field">
-            <label className="label is-small">Max Review Cards / Day</label>
-            <div className="control">
-              <input
-                className="input is-small"
-                type="number"
-                min="0"
-                value={maxReview}
-                onChange={(e) => setMaxReview(parseInt(e.target.value) || 0)}
-              />
-            </div>
-            <p className="help">Graduated cards due for review per day</p>
-          </div>
-        </section>
-        <footer className="modal-card-foot">
+        {error && <p className="mp-error ds-error">{error}</p>}
+
+        {/* Max New */}
+        <div className="ds-field">
+          <label className="mp-label">Max New Cards / Day</label>
+          <input
+            className="mp-input"
+            type="number"
+            min="0"
+            value={maxNew}
+            onChange={(e) => setMaxNew(parseInt(e.target.value) || 0)}
+          />
+          <p className="text-small ds-field-hint">
+            Brand-new cards introduced per day
+          </p>
+        </div>
+
+        {/* Max Learning */}
+        <div className="ds-field">
+          <label className="mp-label">Max Learning Cards / Day</label>
+          <input
+            className="mp-input"
+            type="number"
+            min="0"
+            value={maxLearning}
+            onChange={(e) => setMaxLearning(parseInt(e.target.value) || 0)}
+          />
+          <p className="text-small ds-field-hint">
+            Cards in the learning phase per day
+          </p>
+        </div>
+
+        {/* Max Review */}
+        <div className="ds-field ds-field-last">
+          <label className="mp-label">Max Review Cards / Day</label>
+          <input
+            className="mp-input"
+            type="number"
+            min="0"
+            value={maxReview}
+            onChange={(e) => setMaxReview(parseInt(e.target.value) || 0)}
+          />
+          <p className="text-small ds-field-hint">
+            Graduated cards due for review per day
+          </p>
+        </div>
+
+        {/* footer */}
+        <div className="mp-btn-row">
           <button
-            className={`button is-link ${saving ? "is-loading" : ""}`}
+            className="mp-btn mp-btn-primary ds-save-btn"
             onClick={handleSave}
+            disabled={saving}
           >
-            Save
+            {saving ? <span className="mp-spinner" /> : "Save"}
           </button>
-          <button className="button" onClick={onClose}>
-            Cancel
-          </button>
-        </footer>
+          <button className="mp-btn mp-btn-ghost" onClick={onClose}>Cancel</button>
+        </div>
+
       </div>
     </div>
   );

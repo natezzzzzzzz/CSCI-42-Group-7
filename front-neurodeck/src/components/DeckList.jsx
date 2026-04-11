@@ -5,17 +5,15 @@ export default function DeckList({ decks, searchQuery, filterCategory, onUpdate,
   const filteredDecks = decks.filter(deck => {
     const name = deck.DeckName?.toLowerCase() ?? "";
     const category = deck.Category?.toLowerCase() ?? "";
-
     const matchesName = name.includes(searchQuery.toLowerCase());
     const matchesCategory = filterCategory
       ? category.includes(filterCategory.toLowerCase())
       : true;
-
     return matchesName && matchesCategory;
   });
 
   return (
-    <div>
+    <div style={{ display: "flex", flexDirection: "column", gap: "0", textAlign: "left" }}>
       {filteredDecks.map(deck => (
         <DeckItem
           key={deck.DeckID}
@@ -24,8 +22,9 @@ export default function DeckList({ decks, searchQuery, filterCategory, onUpdate,
           onDelete={onDelete}
         />
       ))}
-      {filteredDecks.length === 0 && <p className="text-small">No decks found.</p>}
+      {filteredDecks.length === 0 && (
+        <p className="mp-empty">No decks found.</p>
+      )}
     </div>
-    
   );
 }
