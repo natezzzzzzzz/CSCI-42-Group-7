@@ -40,96 +40,87 @@ export default function DeckItem({ deck, onDelete, onUpdate }) {
   };
 
   return (
-    <div className="box shadow-lg">
+    <div className="mp-panel" style={{ textAlign: "left" }}>
       {isEditing ? (
         <>
-          <div className="field">
-            <div className="control">
-              <input
-                className="input"
-                value={deckName}
-                onChange={(e) => setDeckName(e.target.value)}
-                placeholder="Deck Name"
-              />
-            </div>
-          </div>
-          <div className="field">
-            <div className="control">
-              <input
-                className="input"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                placeholder="Category"
-              />
-            </div>
-          </div>
-          <div className="field">
-            <div className="control">
-              <input
-                className="input"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Description"
-              />
-            </div>
-          </div>
-          {error && <p className="help is-danger">{error}</p>}
-          <div className="buttons">
-            <button className="button is-success" onClick={handleSave}>Save</button>
-            <button className="button" onClick={() => setIsEditing(false)}>Cancel</button>
+          <label className="mp-label">Deck Name</label>
+          <input
+            className="mp-input"
+            value={deckName}
+            onChange={(e) => setDeckName(e.target.value)}
+            placeholder="Deck Name"
+          />
+          <label className="mp-label">Category</label>
+          <input
+            className="mp-input"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            placeholder="Category"
+          />
+          <label className="mp-label">Description</label>
+          <input
+            className="mp-input"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Description"
+          />
+          {error && <p className="mp-error">{error}</p>}
+          <div className="mp-btn-row" style={{ marginTop: "0.5rem" }}>
+            <button className="mp-btn mp-btn-success" onClick={handleSave}>Save</button>
+            <button className="mp-btn mp-btn-ghost" onClick={() => setIsEditing(false)}>Cancel</button>
           </div>
         </>
       ) : (
         <>
-          <p className="h4">{deck.DeckName}</p>
-          <p className="text-small">
-            <strong>Category:</strong> {deck.Category}
-          </p>
-          <p className="text-small">{deck.Description}</p>
-          {error && <p className="help is-danger">{error}</p>}
-          <div className="buttons">
-            <button
-              className="button is-small"
-              onClick={() => setShowCards((prev) => !prev)}
-            >
+          <div style={{ marginBottom: "1rem" }}>
+            <p className="mp-panel-title" style={{ marginBottom: "0.5rem" }}>
+              {deck.DeckName}
+            </p>
+            {deck.Category && (
+              <span className="mp-room-tag" style={{ display: "inline-block", marginBottom: "0.5rem" }}>
+                {deck.Category}
+              </span>
+            )}
+            {deck.Description && (
+              <p className="text-small" style={{ color: "var(--neutral-dark)", marginTop: "0.25rem" }}>
+                {deck.Description}
+              </p>
+            )}
+          </div>
+
+          {error && <p className="mp-error">{error}</p>}
+
+          <div className="mp-btn-row" style={{ flexWrap: "wrap", gap: "0.5rem" }}>
+            <button className="mp-btn mp-btn-ghost" onClick={() => setShowCards(prev => !prev)}>
               {showCards ? "Hide Cards" : "View Cards"}
             </button>
-            <button className="button is-small" onClick={() => setIsEditing(true)}>Edit</button>
-            <button className="button is-small is-danger" onClick={handleDelete}>
-              Delete
+            <button className="mp-btn mp-btn-ghost" onClick={() => setIsEditing(true)}>
+              Edit
             </button>
-            <button className="button is-small is-link" onClick={() => setShowStudy(true)}>
+            <button className="mp-btn mp-btn-ghost" onClick={() => setShowSettings(true)} title="Deck Settings">
+              ⚙
+            </button>
+            <button className="mp-btn mp-btn-primary" style={{ flex: "none" }} onClick={() => setShowStudy(true)}>
               Play
             </button>
-            <button className="button is-small is-light" onClick={() => setShowSettings(true)} title="Deck Settings">
-              <span className="icon is-small">
-                <i className="fas fa-cog"></i>
-              </span>
+            <button className="mp-btn mp-btn-danger" onClick={handleDelete}>
+              Delete
             </button>
           </div>
         </>
       )}
 
-      {/* ── Accordion ── */}
       {showCards && !isEditing && (
-        <div className="mt-3">
+        <div style={{ marginTop: "1.25rem", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "1.25rem" }}>
           <CardEditor deckId={deck.DeckID} />
         </div>
       )}
 
-      {/* ── Modals ── */}
       {showSettings && (
-        <DeckSettingsModal
-          deckId={deck.DeckID}
-          onClose={() => setShowSettings(false)}
-        />
+        <DeckSettingsModal deckId={deck.DeckID} onClose={() => setShowSettings(false)} />
       )}
       {showStudy && (
-        <CustomStudyModal
-          deckId={deck.DeckID}
-          deckName={deck.DeckName}
-          onClose={() => setShowStudy(false)}
-        />
+        <CustomStudyModal deckId={deck.DeckID} deckName={deck.DeckName} onClose={() => setShowStudy(false)} />
       )}
     </div>
   );

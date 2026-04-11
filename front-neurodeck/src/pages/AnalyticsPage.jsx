@@ -98,7 +98,7 @@ export default function AnalyticsPage() {
     <div className="an-page">
       <div className="an-header">
         <button className="mp-back-btn" onClick={() => navigate("/main")}>
-          Back to Menu
+          ← Back to Menu
         </button>
         <h1 className="h4">Analytics</h1>
       </div>

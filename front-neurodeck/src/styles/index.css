@@ -184,6 +184,8 @@ a:hover {
   align-items: center;
   gap: 1.25rem;
   margin-bottom: 2rem;
+  position: relative;
+  justify-content: center;
 }
 
 .mp-back-btn {
@@ -198,13 +200,20 @@ a:hover {
   cursor: pointer;
   transition: all var(--transition-normal);
   white-space: nowrap;
+  position: absolute;
+  left: 0;
 }
+
 .mp-back-btn:hover {
   background: rgba(99, 102, 241, 0.25);
   color: #fff;
 }
 
-.mp-page-title { flex: 1; }
+.mp-page-title {
+  flex: 1;
+  text-align: center;
+}
+
 .mp-subtitle { color: var(--neutral-dark); margin: 0; }
 
 /* ── Panels ── */
@@ -787,18 +796,22 @@ a:hover {
   gap: 1.5rem;
   margin-bottom: 2rem;
   flex-wrap: wrap;
+  position: relative;
+  justify-content: center;
 }
 
 .ach-header .h4 {
   margin: 0;
+  text-align: center;
 }
 
 .ach-summary {
   display: flex;
   gap: 1rem;
-  margin-left: auto;
   font-size: 0.85rem;
   color: var(--neutral-mid);
+  position: absolute;
+  right: 0;
 }
 
 .ach-summary-points {
@@ -1020,10 +1033,13 @@ a:hover {
   align-items: center;
   gap: 1rem;
   margin-bottom: 1.5rem;
+  position: relative;
+  justify-content: center;
 }
 
 .an-header h1 {
   margin: 0;
+  text-align: center;
 }
 
 /* ── Key Metrics ── */
@@ -1249,3 +1265,146 @@ a:hover {
   flex-shrink: 0;
 }
 
+/* ── Deck Settings Modal ── */
+
+.ds-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ds-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.ds-modal {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 440px;
+  margin: 1rem;
+  text-align: left;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--neutral-darker);
+}
+
+.ds-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.75rem;
+}
+
+.ds-modal-title {
+  margin: 0;
+}
+
+.ds-close-btn {
+  padding: 0.35rem 0.75rem;
+}
+
+.ds-error {
+  margin-bottom: 1.25rem;
+}
+
+.ds-field {
+  margin-bottom: 1.5rem;
+}
+
+.ds-field-last {
+  margin-bottom: 1.75rem;
+}
+
+.ds-field-hint {
+  color: var(--neutral-dark);
+  margin-top: -0.5rem;
+}
+
+.ds-save-btn {
+  flex: none;
+}
+
+
+/* ── Custom Study Modal ── */
+
+.cs-modal {
+  max-width: 520px;
+}
+
+.cs-loading {
+  display: flex;
+  justify-content: center;
+  padding: 2rem 0;
+}
+
+.cs-section-label {
+  margin-bottom: 0.75rem;
+}
+
+.cs-table-wrapper {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 1.5rem;
+}
+
+.cs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.cs-table-head-row {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.cs-th {
+  padding: 0.6rem 0.85rem;
+  text-align: left;
+  color: var(--neutral-dark);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cs-tr {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: transparent;
+}
+
+.cs-tr-alt {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.cs-td {
+  padding: 0.65rem 0.85rem;
+  color: var(--neutral-white);
+}
+
+.cs-td-label {
+  color: var(--neutral-lighter);
+  font-weight: 500;
+}
+
+.cs-no-due-banner {
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 0.75rem;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.5rem;
+  color: var(--main-light);
+  font-size: 0.875rem;
+}
+
+.cs-total-cards {
+  color: var(--neutral-dark);
+  margin-bottom: 1.75rem;
+}

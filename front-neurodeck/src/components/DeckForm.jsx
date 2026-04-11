@@ -6,10 +6,12 @@ export default function DeckForm({ onDeckCreated }) {
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
     try {
       const newDeck = await createDeck({
         DeckName: deckName,
@@ -23,58 +25,52 @@ export default function DeckForm({ onDeckCreated }) {
     } catch (err) {
       console.error(err);
       setError(err.message || "Failed to create deck");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="box shadow-lg">
+    <div className="mp-panel">
+      <p className="mp-panel-title">New Deck</p>
       <form onSubmit={handleSubmit}>
-        <div className="field">
-          <div className="control">
-            <input
-              className="input"
-              type="text"
-              placeholder="Deck Name"
-              value={deckName}
-              onChange={(e) => setDeckName(e.target.value)}
-              required
-            />
-          </div>
-        </div>
+        <label className="mp-label">Deck Name</label>
+        <input
+          className="mp-input"
+          type="text"
+          placeholder="e.g. Spanish Vocabulary"
+          value={deckName}
+          onChange={(e) => setDeckName(e.target.value)}
+          required
+        />
 
-        <div className="field">
-          <div className="control">
-            <input
-              className="input"
-              type="text"
-              placeholder="Category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            />
-          </div>
-        </div>
+        <label className="mp-label">Category</label>
+        <input
+          className="mp-input"
+          type="text"
+          placeholder="e.g. Languages"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        />
 
-        <div className="field">
-          <div className="control">
-            <input
-              className="input"
-              type="text"
-              placeholder="Description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-        </div>
+        <label className="mp-label">Description</label>
+        <input
+          className="mp-input"
+          type="text"
+          placeholder="Optional description..."
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
 
-        {error && <p className="help is-danger">{error}</p>}
+        {error && <p className="mp-error">{error}</p>}
 
-        <div className="field">
-          <div className="control">
-            <button className="button is-primary" type="submit">
-              Add Deck
-            </button>
-          </div>
-        </div>
+        <button
+          className="mp-btn mp-btn-primary mp-btn-full"
+          type="submit"
+          disabled={loading}
+        >
+          {loading ? <span className="mp-spinner" /> : "Add Deck"}
+        </button>
       </form>
     </div>
   );

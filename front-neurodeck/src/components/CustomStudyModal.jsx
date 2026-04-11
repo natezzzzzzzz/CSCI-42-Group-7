@@ -27,100 +27,95 @@ export default function CustomStudyModal({ deckId, deckName, onClose }) {
     : 0;
 
   return (
-    <div className="modal is-active">
-      <div className="modal-background" onClick={onClose}></div>
-      <div className="modal-card">
-        <header className="modal-card-head">
-          <p className="modal-card-title">Study: {deckName}</p>
-          <button className="delete" aria-label="close" onClick={onClose}></button>
-        </header>
-        <section className="modal-card-body">
-          {loading ? (
-            <p>Loading...</p>
-          ) : stats ? (
-            <>
-              {/* Due cards breakdown */}
-              <h6 className="title is-6">Cards Due Today</h6>
-              <table className="table is-fullwidth is-striped is-hoverable">
+    <div className="ds-overlay">
+      {/* backdrop */}
+      <div className="ds-backdrop" onClick={onClose} />
+
+      {/* modal card */}
+      <div className="mp-panel ds-modal cs-modal">
+
+        {/* header */}
+        <div className="ds-modal-header">
+          <p className="mp-panel-title ds-modal-title">Study: {deckName}</p>
+          <button className="mp-btn mp-btn-ghost ds-close-btn" onClick={onClose}>✕</button>
+        </div>
+
+        {loading ? (
+          <div className="cs-loading">
+            <span className="mp-spinner" />
+          </div>
+        ) : stats ? (
+          <>
+            {/* Cards Due Today */}
+            <p className="mp-label cs-section-label">Cards Due Today</p>
+            <div className="cs-table-wrapper">
+              <table className="cs-table">
                 <thead>
-                  <tr>
-                    <th>Type</th>
-                    <th>Due</th>
-                    <th>Studied</th>
-                    <th>Limit</th>
-                    <th>Remaining</th>
+                  <tr className="cs-table-head-row">
+                    {["Type", "Due", "Studied", "Limit", "Remaining"].map(h => (
+                      <th key={h} className="cs-th">{h}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td>New</td>
-                    <td>{stats.due_today.new}</td>
-                    <td>{stats.studied_today.new}</td>
-                    <td>{stats.limits.new}</td>
-                    <td>{stats.remaining.new}</td>
-                  </tr>
-                  <tr>
-                    <td>Learning</td>
-                    <td>{stats.due_today.learning}</td>
-                    <td>{stats.studied_today.learning}</td>
-                    <td>{stats.limits.learning}</td>
-                    <td>{stats.remaining.learning}</td>
-                  </tr>
-                  <tr>
-                    <td>Review</td>
-                    <td>{stats.due_today.review}</td>
-                    <td>{stats.studied_today.review}</td>
-                    <td>{stats.limits.review}</td>
-                    <td>{stats.remaining.review}</td>
-                  </tr>
+                  {[
+                    { label: "New", key: "new" },
+                    { label: "Learning", key: "learning" },
+                    { label: "Review", key: "review" },
+                  ].map(({ label, key }, i) => (
+                    <tr key={key} className={`cs-tr ${i % 2 !== 0 ? "cs-tr-alt" : ""}`}>
+                      <td className="cs-td cs-td-label">{label}</td>
+                      <td className="cs-td">{stats.due_today[key]}</td>
+                      <td className="cs-td">{stats.studied_today[key]}</td>
+                      <td className="cs-td">{stats.limits[key]}</td>
+                      <td className="cs-td">{stats.remaining[key]}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
+            </div>
 
-              {totalDue === 0 && daysAhead === 0 && (
-                <div className="notification is-info is-light">
-                  No cards are due right now. Use "Study Ahead" below to review
-                  cards scheduled for future days.
-                </div>
-              )}
-
-              {/* Study Ahead */}
-              <div className="field" style={{ marginTop: "20px" }}>
-                <label className="label is-small">Study Ahead (days)</label>
-                <div className="control">
-                  <input
-                    className="input is-small"
-                    type="number"
-                    min="0"
-                    max="365"
-                    value={daysAhead}
-                    onChange={(e) =>
-                      setDaysAhead(Math.max(0, parseInt(e.target.value) || 0))
-                    }
-                  />
-                </div>
-                <p className="help">
-                  Include cards due within this many days from now. Set to 0 for
-                  only currently due cards.
-                </p>
+            {totalDue === 0 && daysAhead === 0 && (
+              <div className="cs-no-due-banner">
+                No cards are due right now. Use "Study Ahead" below to review cards scheduled for future days.
               </div>
+            )}
 
-              {/* Total cards info */}
-              <p className="has-text-grey is-size-7" style={{ marginTop: "8px" }}>
-                {stats.total_cards_in_deck} total cards in deck
+            {/* Study Ahead */}
+            <div className="ds-field">
+              <label className="mp-label">Study Ahead (days)</label>
+              <input
+                className="mp-input"
+                type="number"
+                min="0"
+                max="365"
+                value={daysAhead}
+                onChange={(e) => setDaysAhead(Math.max(0, parseInt(e.target.value) || 0))}
+              />
+              <p className="text-small ds-field-hint">
+                Include cards due within this many days. Set to 0 for only currently due cards.
               </p>
-            </>
-          ) : (
-            <p>Could not load study stats.</p>
-          )}
-        </section>
-        <footer className="modal-card-foot">
-          <button className="button is-link" onClick={handleStart}>
+            </div>
+
+            <p className="text-small cs-total-cards">
+              {stats.total_cards_in_deck} total cards in deck
+            </p>
+          </>
+        ) : (
+          <p className="mp-empty">Could not load study stats.</p>
+        )}
+
+        {/* footer */}
+        <div className="mp-btn-row">
+          <button
+            className="mp-btn mp-btn-primary ds-save-btn"
+            onClick={handleStart}
+          >
             Start Session
           </button>
-          <button className="button" onClick={onClose}>
-            Cancel
-          </button>
-        </footer>
+          <button className="mp-btn mp-btn-ghost" onClick={onClose}>Cancel</button>
+        </div>
+
       </div>
     </div>
   );
