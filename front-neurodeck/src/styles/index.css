@@ -1248,3 +1248,101 @@ a:hover {
   text-align: right;
   flex-shrink: 0;
 }
+
+
+/* ── Solo Game Page ── */
+.solo-page {
+  min-height: 100vh;
+  padding: 2rem 1.5rem 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.solo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 560px;
+  margin-bottom: 2rem;
+}
+
+.solo-progress-wrap {
+  width: 100%;
+  max-width: 560px;
+  margin-bottom: 1.25rem;
+}
+
+.solo-card-wrap {
+  width: 100%;
+  max-width: 560px;
+}
+
+.solo-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  padding: 3.5rem 2.5rem;
+  cursor: pointer;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  transition: border-color var(--transition-normal), box-shadow var(--transition-normal), background var(--transition-normal);
+  user-select: none;
+  text-align: center;
+}
+
+.solo-card:hover {
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.15), var(--shadow-lg);
+}
+
+.solo-card.flipped {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.solo-card-label {
+  font-size: var(--font-tiny);
+  font-weight: var(--weight-semi-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--main-light);
+}
+
+.solo-card.flipped .solo-card-label {
+  color: var(--green);
+}
+
+.solo-card-text {
+  font-size: var(--font-large);
+  font-weight: var(--weight-medium);
+  color: var(--neutral-white);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.solo-card-hint {
+  font-size: var(--font-small);
+  color: var(--neutral-dark);
+}
+
+.solo-restart-row {
+  margin-top: 0.75rem;
+  display: flex;
+  justify-content: center;
+}
+
+.solo-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  width: 100%;
+  max-width: 560px;
+}
