@@ -19,7 +19,7 @@ function MainMenu({ setPage }) {
         </div>
 
         <div className="columns">
-          <div className="column">
+          <div className="column" onClick = {() => navigate("/profile")}>
             <div className="box shadow-sm">
               <h2 className="h6">Profile</h2>
               <p className="text-small">View your account details</p>
@@ -57,7 +57,7 @@ function MainMenu({ setPage }) {
               </div>
           </div>
 
-          <div className="column" onClick={() => navigate("/cosmetics")}>
+          <div className="column" onClick={() => navigate("/shop")}>
             <div className="box shadow-sm">
               <h2>Cosmetics</h2>
               <p className="text-small">Shop and equip items</p>
