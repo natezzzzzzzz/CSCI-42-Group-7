@@ -77,77 +77,61 @@ export default function SoloGamePage() {
     completionReported.current = false;
   };
 
-  if (cards.length === 0) return <p className="mp-empty">No flashcards in this deck yet!</p>;
+  if (cards.length === 0) return <p>No flashcards in this deck yet!</p>;
 
   const current = cards[currentIndex];
-  const progress = ((currentIndex + 1) / cards.length) * 100;
 
   return (
-    <div className="solo-page">
+    <div style={{ textAlign: "center", padding: "40px" }}>
 
-      {/* Header */}
-      <div className="solo-header">
-        <button className="mp-back-btn" onClick={() => navigate("/decks")}>
-          ← Back to Decks
+      <button
+        onClick={() => navigate("/decks")}
+        style={{ marginTop: "20px", display: "block", margin: "20px auto" }}
+      >
+        Back to Decks
+      </button>
+
+      {/* deck progress counter */}
+      <p>{currentIndex + 1} / {cards.length}</p>
+
+      {/* flashcard proper */}
+      <div
+        onClick={handleFlip}
+        style={{
+          border: "2px solid #ccc",
+          borderRadius: "12px",
+          padding: "60px 40px",
+          margin: "20px auto",
+          maxWidth: "500px",
+          minHeight: "200px",
+          cursor: "pointer",
+          backgroundColor: isFlipped ? "#f0f8ff" : "#ffffff",
+          transition: "background-color 0.3s ease",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "20px",
+        }}
+      >
+        {isFlipped ? current.Answer : current.Question}
+      </div>
+
+      <p style={{ color: "#999", fontSize: "13px" }}>
+        {isFlipped ? "Answer" : "Click to reveal answer"}
+      </p>
+
+      <button onClick={handleRestart} style={{ marginBottom: "20px" }}>
+        Restart
+      </button>
+
+      {/* navigation buttons */}
+      <div style={{ marginTop: "20px", display: "flex", justifyContent: "center", gap: "12px" }}>
+        <button onClick={handlePrev} disabled={currentIndex === 0}>
+          Previous
         </button>
-        <span className="mp-room-tag">Solo Study</span>
-      </div>
 
-      {/* Progress bar */}
-      <div className="solo-progress-wrap">
-        <div className="mp-progress-bar">        
-          <div className="mp-progress-track">    
-            <div
-              className="mp-progress-fill"      
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <span className="mp-progress-label">  
-            {currentIndex + 1} / {cards.length}
-          </span>
-        </div>
-      </div>
-
-      {/* Flashcard */}
-      <div className="solo-card-wrap">
-        <div
-          className={`solo-card${isFlipped ? " flipped" : ""}`}
-          onClick={handleFlip}
-        >
-          <span className="solo-card-label">
-            {isFlipped ? "Answer" : "Question"}
-          </span>
-          <p className="solo-card-text">
-            {isFlipped ? current.Answer : current.Question}
-          </p>
-          {!isFlipped && (
-            <span className="solo-card-hint">Click to reveal answer</span>
-          )}
-        </div>
-      </div>
-
-      {/* Restart */}
-      <div className="solo-restart-row">
-        <button className="mp-btn mp-btn-ghost" onClick={handleRestart}>
-          ↺ Restart
-        </button>
-      </div>
-
-      {/* Navigation */}
-      <div className="solo-nav">
-        <button
-          className="mp-btn mp-btn-ghost"
-          onClick={handlePrev}
-          disabled={currentIndex === 0}
-        >
-          ← Prev
-        </button>
-        <button
-          className="mp-btn mp-btn-primary"
-          onClick={handleNext}
-          disabled={currentIndex === cards.length - 1}
-        >
-          Next →
+        <button onClick={handleNext} disabled={currentIndex === cards.length - 1}>
+          Next
         </button>
       </div>
 
