@@ -10,6 +10,7 @@ import './styles/App.css';
 import SoloGamePage from "./pages/SoloGamePage";
 import AchievementsPage from "./pages/AchievementsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import CosmeticsPage from "./pages/CosmeticsPage";
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
           <Route path="/solo/:deckId" element={<SoloGamePage />} />
           <Route path="/achievements" element={<AchievementsPage />} />
           <Route path="/analytics" element={<AnalyticsPage />} />
+          <Route path="/cosmetics" element={<CosmeticsPage />} />
         </Routes>
       </Router>
     </AchievementNotificationProvider>

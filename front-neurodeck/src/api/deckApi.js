@@ -281,3 +281,36 @@ export async function fetchActivityData() {
   });
   return handleResponse(res);
 }
+
+
+// Cosmetics API
+
+export async function fetchCosmeticShop() {
+  const res = await fetch(`${BASE_URL}/api/cosmetics/shop/`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(res);
+}
+
+export async function purchaseCosmetic(cosmeticId) {
+  const res = await fetch(`${BASE_URL}/api/cosmetics/shop/${cosmeticId}/purchase/`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
+  return handleResponse(res);
+}
+
+export async function equipCosmetic(cosmeticId) {
+  const res = await fetch(`${BASE_URL}/api/cosmetics/shop/${cosmeticId}/equip/`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
+  return handleResponse(res);
+}
+
+export async function fetchMyCosmetics() {
+  const res = await fetch(`${BASE_URL}/api/cosmetics/my/`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(res);
+}

@@ -56,6 +56,13 @@ function MainMenu({ setPage }) {
               <p className="text-small">Play with friends</p>
               </div>
           </div>
+
+          <div className="column" onClick={() => navigate("/cosmetics")}>
+            <div className="box shadow-sm">
+              <h2>Cosmetics</h2>
+              <p className="text-small">Shop and equip items</p>
+            </div>
+          </div>
         </div>
 
         
