@@ -53,6 +53,31 @@ export async function deleteDeck(deckId) {
   return handleResponse(res);
 }
 
+// ─── Deck Settings API ──────────────────────────────────────────────────────
+
+export async function fetchDeckSettings(deckId) {
+  const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/settings/`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(res);
+}
+
+export async function updateDeckSettings(deckId, settings) {
+  const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/settings/`, {
+    method: "PATCH",
+    headers: authHeaders(),
+    body: JSON.stringify(settings),
+  });
+  return handleResponse(res);
+}
+
+export async function fetchDeckStudyStats(deckId) {
+  const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/study-stats/`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(res);
+}
+
 // ─── Card API ─────────────────────────────────────────────────────────────────
 
 export async function fetchCards(deckId) {
@@ -201,6 +226,26 @@ export async function fetchRecentUnlocks(limit = 5) {
 
 // ─── Solo Session API ───────────────────────────────────────────────────────
 
+export async function startSoloSession(deckId, daysAhead = 0) {
+  const body = { deck_id: deckId };
+  if (daysAhead > 0) body.days_ahead = daysAhead;
+  const res = await fetch(`${BASE_URL}/deck/api/solo/start-session/`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify(body),
+  });
+  return handleResponse(res);
+}
+
+export async function rateSoloCard(cardId, rating) {
+  const res = await fetch(`${BASE_URL}/deck/api/solo/rate-card/`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ card_id: cardId, rating }),
+  });
+  return handleResponse(res);
+}
+
 export async function reportSoloCardStudied(cardId, isCorrect = null) {
   const body = { card_id: cardId };
   if (isCorrect !== null) body.is_correct = isCorrect;
@@ -212,7 +257,7 @@ export async function reportSoloCardStudied(cardId, isCorrect = null) {
   return handleResponse(res);
 }
 
-export async function reportSoloSessionComplete(deckId, cardsStudied, correctCount, totalCount) {
+export async function reportSoloSessionComplete(deckId, cardsStudied, correctCount, totalCount, cardsMastered = 0, durationSeconds = 0) {
   const res = await fetch(`${BASE_URL}/deck/api/solo/complete/`, {
     method: "POST",
     headers: authHeaders(),
@@ -221,6 +266,8 @@ export async function reportSoloSessionComplete(deckId, cardsStudied, correctCou
       cards_studied: cardsStudied,
       correct_count: correctCount,
       total_count: totalCount,
+      cards_mastered: cardsMastered,
+      session_duration_seconds: durationSeconds,
     }),
   });
   return handleResponse(res);

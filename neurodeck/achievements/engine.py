@@ -45,6 +45,11 @@ class CardStudiedEvent(AchievementEvent):
     # extra: card, deck, mode
 
 
+class CardMasteredEvent(AchievementEvent):
+    """Fired when a card transitions to mastered state via spaced repetition."""
+    # extra: card_id, deck_id
+
+
 # ---------------------------------------------------------------------------
 # Evaluator registry
 # ---------------------------------------------------------------------------
@@ -90,6 +95,8 @@ class AchievementEngine:
         """Increment the appropriate counters based on event type."""
         if isinstance(event, AnswerSubmittedEvent):
             stats.total_answers = F("total_answers") + 1
+            if event.extra.get("mode") == "solo":
+                stats.spaced_repetition_reviews = F("spaced_repetition_reviews") + 1
             if event.extra.get("is_correct"):
                 stats.total_correct_answers = F("total_correct_answers") + 1
                 stats.current_streak = F("current_streak") + 1
@@ -126,6 +133,10 @@ class AchievementEngine:
         elif isinstance(event, DeckCreatedEvent):
             # No stats counter for deck creation yet, but hook is ready
             pass
+
+        elif isinstance(event, CardMasteredEvent):
+            stats.cards_mastered = F("cards_mastered") + 1
+            stats.save()
 
     @classmethod
     def _update_study_streak(cls, stats):
