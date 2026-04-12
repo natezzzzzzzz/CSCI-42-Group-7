@@ -111,6 +111,7 @@ class GetFlashcardView(APIView):
         return Response({
             "CardID": card.CardID,
             "Question": card.Question,
+            "QuestionImage": card.QuestionImage.url if card.QuestionImage else None,
             "current_round": idx + 1,
             "total_rounds": room.TotalRounds,
         })
@@ -418,6 +419,7 @@ class SubmitAnswerView(APIView):
         return Response({
             "is_correct": is_correct,
             "correct_answer": card.Answer,
+            "correct_answer_image": card.AnswerImage.url if card.AnswerImage else None,
             "score": participant.Score,
             "new_achievements": [
                 {

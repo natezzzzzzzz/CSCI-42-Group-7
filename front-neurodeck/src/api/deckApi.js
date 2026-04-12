@@ -8,6 +8,12 @@ function authHeaders() {
   };
 }
 
+export function getImageUrl(path) {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  return `${BASE_URL}${path}`;
+}
+
 async function handleResponse(res) {
   const data = await res.json();
   if (!res.ok) {
@@ -88,6 +94,23 @@ export async function fetchCards(deckId) {
 }
 
 export async function createCard(deckId, cardData) {
+  const hasImages = cardData.QuestionImage || cardData.AnswerImage;
+
+  if (hasImages) {
+    const formData = new FormData();
+    formData.append("Question", cardData.Question);
+    formData.append("Answer", cardData.Answer || "");
+    if (cardData.QuestionImage) formData.append("QuestionImage", cardData.QuestionImage);
+    if (cardData.AnswerImage) formData.append("AnswerImage", cardData.AnswerImage);
+    const token = localStorage.getItem("access");
+    const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/cards/create/`, {
+      method: "POST",
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: formData,
+    });
+    return handleResponse(res);
+  }
+
   const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/cards/create/`, {
     method: "POST",
     headers: authHeaders(),
@@ -97,6 +120,26 @@ export async function createCard(deckId, cardData) {
 }
 
 export async function updateCard(deckId, cardId, cardData) {
+  const hasImages = cardData.QuestionImage instanceof File || cardData.AnswerImage instanceof File;
+  const hasClearFlags = cardData.clear_QuestionImage || cardData.clear_AnswerImage;
+
+  if (hasImages || hasClearFlags) {
+    const formData = new FormData();
+    if (cardData.Question) formData.append("Question", cardData.Question);
+    if (cardData.Answer !== undefined) formData.append("Answer", cardData.Answer);
+    if (cardData.QuestionImage instanceof File) formData.append("QuestionImage", cardData.QuestionImage);
+    if (cardData.AnswerImage instanceof File) formData.append("AnswerImage", cardData.AnswerImage);
+    if (cardData.clear_QuestionImage) formData.append("clear_QuestionImage", "true");
+    if (cardData.clear_AnswerImage) formData.append("clear_AnswerImage", "true");
+    const token = localStorage.getItem("access");
+    const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/cards/${cardId}/update/`, {
+      method: "PATCH",
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: formData,
+    });
+    return handleResponse(res);
+  }
+
   const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/cards/${cardId}/update/`, {
     method: "PATCH",
     headers: authHeaders(),

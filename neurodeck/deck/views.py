@@ -101,6 +101,17 @@ def update_card(request, deck_id, card_id):
     for key, value in request.data.items():
         if key in allowed:
             setattr(card, key, value)
+
+    if 'QuestionImage' in request.FILES:
+        card.QuestionImage = request.FILES['QuestionImage']
+    elif request.data.get('clear_QuestionImage') in ('true', 'True', True):
+        card.QuestionImage = None
+
+    if 'AnswerImage' in request.FILES:
+        card.AnswerImage = request.FILES['AnswerImage']
+    elif request.data.get('clear_AnswerImage') in ('true', 'True', True):
+        card.AnswerImage = None
+
     card.save()
 
     return Response(FlashcardSerializer(card).data)
@@ -394,6 +405,8 @@ def solo_start_session(request):
                 "CardID": d["card"].CardID,
                 "Question": d["card"].Question,
                 "Answer": d["card"].Answer,
+                "QuestionImage": d["card"].QuestionImage.url if d["card"].QuestionImage else None,
+                "AnswerImage": d["card"].AnswerImage.url if d["card"].AnswerImage else None,
                 "state": d["progress"].State,
                 "ef": d["progress"].EF,
                 "interval_days": d["progress"].Interval,

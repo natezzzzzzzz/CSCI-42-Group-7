@@ -11,6 +11,7 @@ import {
   submitAnswer as apiSubmitAnswer,
   fetchMyDecks,
   nextCard as apiNextCard,
+  getImageUrl,
 } from '../api/deckApi';
 import { useAchievementNotify } from './AchievementToast';
 
@@ -132,6 +133,9 @@ function FlashcardPanel({ card, onSubmit, onNext, isLoading, currentRound, total
 
       <div className="mp-question-box">
         <span className="mp-question-label">Question</span>
+        {card.QuestionImage && (
+          <img src={getImageUrl(card.QuestionImage)} alt="Question" className="mp-card-image" />
+        )}
         <p className="mp-question-text">{card.Question}</p>
       </div>
 
@@ -161,11 +165,16 @@ function FlashcardPanel({ card, onSubmit, onNext, isLoading, currentRound, total
       ) : feedback ? (
         <div className={`mp-feedback ${feedback.is_correct ? 'mp-correct' : 'mp-incorrect'}`}>
           <span className="mp-feedback-icon">{feedback.is_correct ? '✅' : '❌'}</span>
-          <span>
-            {feedback.is_correct
-              ? 'Correct!'
-              : `Incorrect — answer: ${feedback.correct_answer}`}
-          </span>
+          <div className="mp-feedback-content">
+            <span>
+              {feedback.is_correct
+                ? 'Correct!'
+                : `Incorrect — answer: ${feedback.correct_answer}`}
+            </span>
+            {!feedback.is_correct && feedback.correct_answer_image && (
+              <img src={getImageUrl(feedback.correct_answer_image)} alt="Correct answer" className="mp-card-image mp-feedback-image" />
+            )}
+          </div>
           {/* "Next Card" only for host */}
           {onNext && (
             <button
