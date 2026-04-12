@@ -5,12 +5,22 @@ from .models import CosmeticItem, UserCosmetic
 class CosmeticItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = CosmeticItem
-        fields = ["CosmeticID", "ItemName", "ItemType", "Cost", "ImagePath"]
+        fields = ["cosmeticID", "item_name", "cost", "image", "rarity"]
 
 
 class UserCosmeticSerializer(serializers.ModelSerializer):
-    item = CosmeticItemSerializer(source="CosmeticID", read_only=True)
+    CosmeticID = serializers.CharField(source="cosmeticID.cosmeticID")
+    ItemName = serializers.CharField(source="cosmeticID.item_name")
+    Image = serializers.ImageField(source="cosmeticID.image")
+    Cost = serializers.IntegerField(source="cosmeticID.cost")
 
     class Meta:
         model = UserCosmetic
-        fields = ["item", "IsEquipped", "DatePurchased"]
+        fields = [
+            "CosmeticID",
+            "ItemName",
+            "Image",
+            "Cost",
+            "is_equipped",
+            "date_purchased",
+        ]

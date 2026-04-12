@@ -212,16 +212,11 @@ export const fetchRecentUnlocks = (limit = 5) =>
 //
 
 export const fetchCosmeticShop = () =>
-  get(`${BASE_URL}/api/cosmetics/shop/`);
+  get(`${BASE_URL}/cosmetics/shop/`);
 
 export const purchaseCosmetic = (id) =>
-  post(`${BASE_URL}/api/cosmetics/shop/${id}/purchase/`);
+  post(`${BASE_URL}/cosmetics/shop/${id}/purchase/`);
 
-export const equipCosmetic = (id) =>
-  post(`${BASE_URL}/api/cosmetics/shop/${id}/equip/`);
-
-export const fetchMyCosmetics = () =>
-  get(`${BASE_URL}/api/cosmetics/my/`);
 
 //
 // ─────────────────────────────────────────────
@@ -230,7 +225,10 @@ export const fetchMyCosmetics = () =>
 //
 
 export const fetchAvatar = () =>
-  get(`${BASE_URL}/api/cosmetics/avatar/`);
+  get(`${BASE_URL}/cosmetics/avatar/`);
 
-export const fetchUserStats = () =>
-  get(`${BASE_URL}/api/achievements/stats/`);
+export const fetchMyCosmetics = () =>
+  get(`${BASE_URL}/cosmetics/my/`);
+
+export const equipCosmetic = (id) =>
+  post(`${BASE_URL}/cosmetics/shop/${id}/equip/`);

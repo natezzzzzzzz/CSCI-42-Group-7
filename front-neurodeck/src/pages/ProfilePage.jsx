@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { fetchAvatar, fetchMyCosmetics, equipCosmetic, fetchAchievementStats } from "../api/deckApi.js";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -8,17 +9,20 @@ export default function ProfilePage() {
   const [avatar, setAvatar] = useState(null);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState([]);
 
   useEffect(() => {
     async function load() {
       try {
-        const [avatarRes, statsRes] = await Promise.all([
-          axios.get("/cosmetics/avatar/"),
-          axios.get("/achievements/stats/"),
-        ]);
+        const [avatarRes, itemsRes, statsRes] = await Promise.all([
+          fetchAvatar(),
+          fetchMyCosmetics(),
+          fetchAchievementStats(),
+,        ]);
 
-        setAvatar(avatarRes.data.equipped);
-        setStats(statsRes.data);
+        setAvatar(avatarRes.equipped);
+        setItems(itemsRes);
+        setStats(statsRes);
       } catch (err) {
         console.error("Profile load failed:", err);
       } finally {
@@ -28,6 +32,19 @@ export default function ProfilePage() {
 
     load();
   }, []);
+
+  const handleEquip = async (id) => {
+    try {
+      await equipCosmetic(id);
+
+      // refresh avatar
+      const res = await fetchAvatar();
+      setAvatar(res.equipped);
+
+    } catch (err) {
+      console.error("Equip failed:", err);
+    }
+  };  
 
   if (loading) return <div>Loading profile...</div>;
 
@@ -50,9 +67,27 @@ export default function ProfilePage() {
         />
       </div>
 
-      <button onClick={() => navigate("/shop")}>
-        Go to Shop
-      </button>
+      {/* COSMETIC INVENTORY */}
+      <div className="inventory">
+        <h2>My Cosmetics</h2>
+        <div className="csm-grid">
+          {items.map((c) => (
+            <div key={c.item.cosmeticID} className="csm-card">
+              <img src={c.item.image} alt="" width={80} />
+              <p>{c.item.item_name}</p>
+
+              <button onClick={() => handleEquip(c.item.cosmeticID)}>
+                Equip
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <button onClick={() => navigate("/shop")}>
+          Go to Shop
+        </button>
+      </div>
+
     </div>
   );
 }
