@@ -190,6 +190,22 @@ export default function AnalyticsPage() {
                   <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
                   <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                 </linearGradient>
+                <linearGradient id="againGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="hardGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#f97316" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="goodGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="easyGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                </linearGradient>
               </defs>
               <XAxis
                 dataKey="date"
@@ -202,8 +218,12 @@ export default function AnalyticsPage() {
                 labelStyle={{ color: "#f8fafc" }}
                 itemStyle={{ color: "#cbd5e1" }}
               />
-              <Area type="monotone" dataKey="correct" stroke="#6366f1" fill="url(#correctGrad)" name="Correct" />
-              <Area type="monotone" dataKey="wrong" stroke="#ef4444" fill="url(#wrongGrad)" name="Wrong" />
+              <Area type="monotone" dataKey="correct" stroke="#6366f1" fill="url(#correctGrad)" name="Correct – Multiplayer" />
+              <Area type="monotone" dataKey="wrong" stroke="#ef4444" fill="url(#wrongGrad)" name="Wrong – Multiplayer" />
+              <Area type="monotone" dataKey="again" stroke="#ef4444" fill="url(#againGrad)" name="Again" />
+              <Area type="monotone" dataKey="hard" stroke="#f97316" fill="url(#hardGrad)" name="Hard" />
+              <Area type="monotone" dataKey="good" stroke="#22c55e" fill="url(#goodGrad)" name="Good" />
+              <Area type="monotone" dataKey="easy" stroke="#3b82f6" fill="url(#easyGrad)" name="Easy" />
             </AreaChart>
           </ResponsiveContainer>
         </div>

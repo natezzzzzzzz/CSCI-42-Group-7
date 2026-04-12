@@ -525,6 +525,16 @@ def solo_rate_card(request):
                 )
             )
 
+        # Record the answer for analytics
+        from achievements.models import AnswerRecord
+        AnswerRecord.objects.create(
+            user=request.user,
+            card=card,
+            is_correct=is_correct,
+            rating=rating,
+            mode="solo",
+        )
+
     # Compute previews for the card's new state (useful if re-queued)
     previews = {}
     for rv in [1, 2, 3, 4]:
