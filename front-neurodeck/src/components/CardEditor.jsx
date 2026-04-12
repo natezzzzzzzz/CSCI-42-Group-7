@@ -106,6 +106,7 @@ export default function CardEditor({ deckId }) {
   }
 
   async function handleDeleteCard(cardId) {
+    if (!window.confirm("Are you sure you want to delete this card?")) return;
     try {
       await deleteCard(deckId, cardId);
       setCards((prev) => prev.filter((c) => c.CardID !== cardId));

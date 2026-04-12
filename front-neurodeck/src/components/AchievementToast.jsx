@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext, useCallback } from "react";
+import { useState, useEffect, useRef, createContext, useContext, useCallback } from "react";
 
 const AchievementNotificationContext = createContext();
 
@@ -33,13 +33,17 @@ export function useAchievementNotify() {
 
 function AchievementToast({ achievement, onDismiss }) {
   const [exiting, setExiting] = useState(false);
+  const dismissTimerRef = useRef(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setExiting(true);
-      setTimeout(onDismiss, 300);
+      dismissTimerRef.current = setTimeout(onDismiss, 300);
     }, 3700);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(dismissTimerRef.current);
+    };
   }, [onDismiss]);
 
   return (
