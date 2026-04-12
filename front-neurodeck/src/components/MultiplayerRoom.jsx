@@ -253,7 +253,9 @@ export default function MultiplayerRoom({ onLeave }) {
   const pollRef = useRef(null);
   const roomRef = useRef(null);
   const checkSyncRef = useRef(null);
-  const shownGameEndAchievements = useRef(false);
+  // Track achievement names already shown as toasts, so per-answer achievements
+  // aren't re-shown when the game-end polling response includes them again.
+  const shownAchievementNames = useRef(new Set());
 
   useEffect(() => { roomRef.current = room; }, [room]);
   useEffect(() => () => clearInterval(pollRef.current), []);
@@ -270,6 +272,17 @@ export default function MultiplayerRoom({ onLeave }) {
   }, []);
 
   const clearError = () => setError('');
+
+  // Show achievement toasts, skipping any that were already shown in this session.
+  const showAchievements = useCallback((achievements) => {
+    if (!achievements || achievements.length === 0) return;
+    achievements.forEach((a) => {
+      if (!shownAchievementNames.current.has(a.name)) {
+        shownAchievementNames.current.add(a.name);
+        notifyAchievement(a);
+      }
+    });
+  }, [notifyAchievement]);
 
   // FIX: No longer depends on `phase` — uses functional setState to avoid stale closures
   // inside the polling interval.
@@ -331,17 +344,15 @@ export default function MultiplayerRoom({ onLeave }) {
         }
 
         if (data.Status === 'finished') {
-          // Show game-end achievement toasts once (for non-hosts who detect
-          // the game ending via polling rather than a direct API call).
-          if (!shownGameEndAchievements.current && data.new_achievements && data.new_achievements.length > 0) {
-            data.new_achievements.forEach((a) => notifyAchievement(a));
-            shownGameEndAchievements.current = true;
-          }
+          // Show game-end achievement toasts for non-hosts who detect
+          // the game ending via polling. showAchievements deduplicates
+          // against any per-answer achievements already shown.
+          showAchievements(data.new_achievements);
           setPhase('finished');
         }
       } catch { /* ignore transient network errors */ }
     }, 3000);
-  }, [handleFetchCard, notifyAchievement]);
+  }, [handleFetchCard, showAchievements]);
 
   // Host-only: advances the index on the server then immediately fetches the new card
   // for the host. Non-hosts will pick up the change on their next poll tick (≤3 s).
@@ -357,10 +368,7 @@ export default function MultiplayerRoom({ onLeave }) {
         return;
       }
       if (result.game_over) {
-        if (result.new_achievements && result.new_achievements.length > 0) {
-          result.new_achievements.forEach((a) => notifyAchievement(a));
-          shownGameEndAchievements.current = true;
-        }
+        showAchievements(result.new_achievements);
         setPhase('finished');
         return;
       }
@@ -395,10 +403,7 @@ export default function MultiplayerRoom({ onLeave }) {
     try {
       const result = await apiNextCard(code, true); // pass confirm=true
       if (result.game_over) {
-        if (result.new_achievements && result.new_achievements.length > 0) {
-          result.new_achievements.forEach((a) => notifyAchievement(a));
-          shownGameEndAchievements.current = true;
-        }
+        showAchievements(result.new_achievements);
         setPhase('finished');
         return;
       }
@@ -478,10 +483,7 @@ export default function MultiplayerRoom({ onLeave }) {
     try {
       const data = await apiEndGame(roomRef.current.RoomCode);
       applyRoomUpdate(data);
-      if (data.new_achievements && data.new_achievements.length > 0) {
-        data.new_achievements.forEach((a) => notifyAchievement(a));
-        shownGameEndAchievements.current = true;
-      }
+      showAchievements(data.new_achievements);
       setPhase('finished');
     } catch (e) {
       setError(e.message ?? 'Failed to end game.');
@@ -505,10 +507,10 @@ export default function MultiplayerRoom({ onLeave }) {
       } else {
         setStreak(0);
       }
-      // Show achievement toasts if any were unlocked
-      if (data.new_achievements && data.new_achievements.length > 0) {
-        data.new_achievements.forEach((a) => notifyAchievement(a));
-      }
+      // Show achievement toasts if any were unlocked (deduplicated against
+      // any already-shown achievements so per-answer toasts aren't repeated
+      // when the game ends and the polling response re-includes them).
+      showAchievements(data.new_achievements);
       // Refresh room to get live scoreboard update
       const roomData = await getRoomDetail(roomRef.current.RoomCode);
       setRoom(roomData);
