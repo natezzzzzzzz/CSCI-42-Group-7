@@ -4,6 +4,8 @@ from rest_framework.response import Response
 
 from datetime import timedelta
 
+from django.db.models import OuterRef, Subquery, Sum
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from .models import Achievement, AnswerRecord, GameResult, UserAchievement, UserStats
@@ -235,3 +237,57 @@ def activity_data(request):
             "total_wrong": stats.total_answers - stats.total_correct_answers,
         }
     )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def leaderboard(request):
+    """GET /achievements/leaderboard/ — global ranking by correct answers with player tier."""
+    from django.db import models
+
+    max_points = Achievement.objects.aggregate(total=Sum("points"))["total"] or 0
+
+    all_stats = (
+        UserStats.objects
+        .select_related("user")
+        .annotate(earned_points=Coalesce(
+            Subquery(
+                UserAchievement.objects.filter(
+                    user_id=OuterRef("user_id")
+                ).values("user_id").annotate(
+                    total=Sum("achievement__points")
+                ).values("total"),
+                output_field=models.PositiveIntegerField(),
+            ),
+            0,
+        ))
+        .order_by("-total_correct_answers", "-earned_points")
+    )
+
+    TIER_THRESHOLDS = [
+        (80, "Diamond"),
+        (60, "Platinum"),
+        (40, "Gold"),
+        (20, "Silver"),
+    ]
+
+    result = []
+    for idx, s in enumerate(all_stats, start=1):
+        pct = (s.earned_points / max_points * 100) if max_points > 0 else 0
+        tier = "Bronze"
+        for threshold, name in TIER_THRESHOLDS:
+            if pct >= threshold:
+                tier = name
+                break
+        result.append(
+            {
+                "rank": idx,
+                "username": s.user.username,
+                "total_correct_answers": s.total_correct_answers,
+                "total_points": s.earned_points,
+                "max_points": max_points,
+                "tier": tier,
+            }
+        )
+
+    return Response({"leaderboard": result})

@@ -1265,6 +1265,118 @@ a:hover {
   flex-shrink: 0;
 }
 
+/* ── Player Tier Card ── */
+
+.an-tier-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 0.75rem;
+  padding: 1.25rem 1rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.an-tier-name {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.an-tier-sub {
+  font-size: 0.8rem;
+  color: var(--neutral-mid);
+}
+
+.an-tier-next {
+  font-size: 0.75rem;
+  color: var(--neutral-mid);
+  opacity: 0.85;
+}
+
+/* ── Leaderboard ── */
+
+.an-lb-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.an-lb-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.5rem;
+  transition: background 0.2s;
+}
+
+.an-lb-row:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.an-lb-me {
+  background: rgba(99,102,241,0.12);
+  border: 1px solid rgba(99,102,241,0.25);
+}
+
+.an-lb-rank {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--neutral-dark);
+  width: 2rem;
+  flex-shrink: 0;
+}
+
+.an-lb-name {
+  flex: 1;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--neutral-lighter);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.an-lb-you {
+  font-size: 0.65rem;
+  background: rgba(99,102,241,0.3);
+  color: var(--main-light);
+  padding: 0.1rem 0.4rem;
+  border-radius: 99px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.an-lb-tier {
+  font-size: 0.8rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.an-lb-score {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--main-light);
+  background: rgba(99,102,241,0.15);
+  padding: 0.2rem 0.6rem;
+  border-radius: 99px;
+  flex-shrink: 0;
+}
+
+.an-lb-ellipsis {
+  text-align: center;
+  color: var(--neutral-dark);
+  font-size: 1rem;
+  letter-spacing: 0.3em;
+  padding: 0.2rem 0;
+}
+
 /* ── Deck Settings Modal ── */
 
 .ds-overlay {

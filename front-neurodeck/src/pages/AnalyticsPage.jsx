@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   XAxis,
@@ -12,7 +12,8 @@ import {
   AreaChart,
   Area,
 } from "recharts";
-import { fetchAchievementStats, fetchActivityData, fetchRecentUnlocks } from "../api/deckApi";
+import { fetchAchievementStats, fetchActivityData, fetchRecentUnlocks, fetchLeaderboard } from "../api/deckApi";
+import AuthContext from "../context/AuthContext";
 
 const TIER_COLORS = {
   bronze: "#cd7f32",
@@ -40,24 +41,36 @@ const CATEGORY_LABELS = {
   multiplayer: "Multiplayer",
 };
 
+const PLAYER_TIER_COLORS = {
+  Bronze: "#cd7f32",
+  Silver: "#c0c0c0",
+  Gold: "#ffd700",
+  Platinum: "#a5b4fc",
+  Diamond: "#b9f2ff",
+};
+
 export default function AnalyticsPage() {
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
   const [stats, setStats] = useState(null);
   const [activity, setActivity] = useState(null);
   const [recentAchievements, setRecentAchievements] = useState([]);
+  const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       try {
-        const [statsData, activityData, recentData] = await Promise.all([
+        const [statsData, activityData, recentData, leaderboardData] = await Promise.all([
           fetchAchievementStats(),
           fetchActivityData(),
           fetchRecentUnlocks(10),
+          fetchLeaderboard(),
         ]);
         setStats(statsData);
         setActivity(activityData);
         setRecentAchievements(recentData.recent || []);
+        setLeaderboard(leaderboardData.leaderboard || []);
       } catch (e) {
         console.error("Failed to load analytics:", e);
       } finally {
@@ -82,17 +95,17 @@ export default function AnalyticsPage() {
     total: val.total,
   }));
 
-  // Build tier bar data
-  const tierOrder = ["bronze", "silver", "gold", "platinum"];
-  const tierData = tierOrder
-    .filter((t) => activity.tiers[t])
-    .map((t) => ({
-      name: TIER_LABELS[t],
-      unlocked: activity.tiers[t].unlocked,
-      remaining: activity.tiers[t].total - activity.tiers[t].unlocked,
-      total: activity.tiers[t].total,
-      fill: TIER_COLORS[t],
-    }));
+  // Build category bar data
+  const categoryBarData = Object.entries(activity.categories).map(([key, val]) => ({
+    name: CATEGORY_LABELS[key] || key,
+    unlocked: val.unlocked,
+    remaining: val.total - val.unlocked,
+    total: val.total,
+    fill: CATEGORY_COLORS[key] || "#6366f1",
+  }));
+
+  // Find current user's leaderboard entry
+  const myEntry = leaderboard.find((e) => e.username === user?.username);
 
   return (
     <div className="an-page">
@@ -130,6 +143,37 @@ export default function AnalyticsPage() {
           <span className="an-metric-label">Study Streak (days)</span>
         </div>
       </div>
+
+      {/* ── Player Tier Card ── */}
+      {myEntry && (() => {
+        const color = PLAYER_TIER_COLORS[myEntry.tier] || "#cd7f32";
+        const pct = myEntry.max_points > 0
+          ? Math.round((myEntry.total_points / myEntry.max_points) * 100)
+          : 0;
+        const TIER_LADDER = [
+          { tier: "Bronze", pct: 0 },
+          { tier: "Silver", pct: 20 },
+          { tier: "Gold", pct: 40 },
+          { tier: "Platinum", pct: 60 },
+          { tier: "Diamond", pct: 80 },
+        ];
+        const currentIdx = TIER_LADDER.findIndex((t) => t.tier === myEntry.tier);
+        const nextTier = currentIdx < TIER_LADDER.length - 1 ? TIER_LADDER[currentIdx + 1] : null;
+        const ptsToNext = nextTier
+          ? Math.ceil((nextTier.pct / 100) * myEntry.max_points) - myEntry.total_points
+          : 0;
+        return (
+          <div className="an-tier-card" style={{ borderColor: `${color}60`, background: `${color}10` }}>
+            <span className="an-tier-name" style={{ color }}>{myEntry.tier}</span>
+            <span className="an-tier-sub">{myEntry.total_points}/{myEntry.max_points} pts ({pct}%)</span>
+            {nextTier ? (
+              <span className="an-tier-next">{ptsToNext} pts to {nextTier.tier}</span>
+            ) : (
+              <span className="an-tier-next">Max tier reached!</span>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ── Charts Row ── */}
       <div className="an-charts-row">
@@ -201,22 +245,22 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* ── Tier Progress Bars ── */}
+      {/* ── Category Progress Bars ── */}
       <div className="an-chart-card" style={{ marginBottom: "1.5rem" }}>
-        <h3 className="an-chart-title">Achievement Tier Progress</h3>
+        <h3 className="an-chart-title">Achievement Category Progress</h3>
         <div className="an-tier-bars">
-          {tierData.map((t) => {
-            const pct = t.total > 0 ? (t.unlocked / t.total) * 100 : 0;
+          {categoryBarData.map((c) => {
+            const pct = c.total > 0 ? (c.unlocked / c.total) * 100 : 0;
             return (
-              <div key={t.name} className="an-tier-row">
-                <span className="an-tier-label" style={{ color: t.fill }}>{t.name}</span>
+              <div key={c.name} className="an-tier-row">
+                <span className="an-tier-label" style={{ color: c.fill }}>{c.name}</span>
                 <div className="an-tier-track">
                   <div
                     className="an-tier-fill"
-                    style={{ width: `${pct}%`, backgroundColor: t.fill }}
+                    style={{ width: `${pct}%`, backgroundColor: c.fill }}
                   />
                 </div>
-                <span className="an-tier-count">{t.unlocked}/{t.total}</span>
+                <span className="an-tier-count">{c.unlocked}/{c.total}</span>
               </div>
             );
           })}
@@ -266,6 +310,57 @@ export default function AnalyticsPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* ── Global Leaderboard ── */}
+      <div className="an-chart-card" style={{ marginBottom: "1.5rem" }}>
+        <h3 className="an-chart-title">Global Leaderboard</h3>
+        {leaderboard.length === 0 ? (
+          <p className="an-empty">No players yet.</p>
+        ) : (() => {
+          const topCount = 10;
+          const topEntries = leaderboard.slice(0, topCount);
+          const myRank = leaderboard.find((e) => e.username === user?.username)?.rank;
+          const meInTop = myRank != null && myRank <= topCount;
+          const myEntry = myRank != null ? leaderboard[myRank - 1] : null;
+          return (
+            <div className="an-lb-list">
+              {topEntries.map((entry) => {
+                const isMe = entry.username === user?.username;
+                const tierColor = PLAYER_TIER_COLORS[entry.tier] || "#cd7f32";
+                return (
+                  <div key={entry.rank} className={`an-lb-row ${isMe ? "an-lb-me" : ""}`}>
+                    <span className="an-lb-rank">#{entry.rank}</span>
+                    <span className="an-lb-name">
+                      {entry.username}
+                      {isMe && <span className="an-lb-you">You</span>}
+                    </span>
+                    <span className="an-lb-tier" style={{ color: tierColor }}>
+                      {entry.tier}
+                    </span>
+                    <span className="an-lb-score">{entry.total_correct_answers}</span>
+                  </div>
+                );
+              })}
+              {myEntry && !meInTop && (
+                <>
+                  <div className="an-lb-ellipsis">...</div>
+                  <div className="an-lb-row an-lb-me">
+                    <span className="an-lb-rank">#{myEntry.rank}</span>
+                    <span className="an-lb-name">
+                      {myEntry.username}
+                      <span className="an-lb-you">You</span>
+                    </span>
+                    <span className="an-lb-tier" style={{ color: PLAYER_TIER_COLORS[myEntry.tier] || "#cd7f32" }}>
+                      {myEntry.tier}
+                    </span>
+                    <span className="an-lb-score">{myEntry.total_correct_answers}</span>
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

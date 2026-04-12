@@ -324,3 +324,10 @@ export async function fetchActivityData() {
   });
   return handleResponse(res);
 }
+
+export async function fetchLeaderboard() {
+  const res = await fetch(`${BASE_URL}/achievements/leaderboard/`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(res);
+}
