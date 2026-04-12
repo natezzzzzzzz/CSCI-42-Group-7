@@ -67,9 +67,8 @@ class UserCosmetic(models.Model):
     def __str__(self):
         return f"{self.userID.username} owns {self.cosmeticID.item_name}"
         
-        
-        
-class UserAvatar(models.Model):
+
+class Avatar(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -80,14 +79,11 @@ class UserAvatar(models.Model):
         CosmeticItem,
         null=True,
         blank=True,
-        on_delete=models.SET_NULL,
-        related_name="equipped_by"
+        on_delete=models.SET_NULL
     )
-
-    updated_at = models.DateTimeField(auto_now=True)
-
+    
     def __str__(self):
-        return f"{self.user.username}'s avatar"
+        return f"{self.user.username}'s profile"
     
 
 

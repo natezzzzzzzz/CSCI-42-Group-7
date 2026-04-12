@@ -17,7 +17,7 @@ export default function ProfilePage() {
           fetchMyCosmetics(),
         ]);
 
-        setAvatar(avatarRes.equipped);
+        setAvatar(avatarRes);
         setItems(itemsRes);
       } catch (err) {
         console.error("Profile load failed:", err);
@@ -34,7 +34,7 @@ export default function ProfilePage() {
       await equipCosmetic(id);
 
       const avatarRes = await fetchAvatar();
-      setAvatar(avatarRes.equipped);
+      setAvatar(avatarRes);
 
       const itemsRes = await fetchMyCosmetics();
       setItems(itemsRes);
@@ -59,8 +59,8 @@ export default function ProfilePage() {
       {/* AVATAR */}
       <div className="avatar-box">
         <img
-          src={avatar.url ? `http://127.0.0.1:8000${avatar.url}` : "/default.png"}
-          alt={avatar.name || "no avatar found"}
+          src={avatar?.url ? `http://127.0.0.1:8000${avatar.url}` : "/default.png"}
+          alt={avatar?.name || "avatar not found"}
           className="avatar-img"
         />
       </div>

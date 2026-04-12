@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from .models import CosmeticItem, UserCosmetic, UserAvatar
+from .models import CosmeticItem, UserCosmetic, Avatar
 from .serializers import CosmeticItemSerializer, UserCosmeticSerializer
 
 
@@ -16,7 +16,7 @@ def list_shop(request):
         .values_list("cosmeticID_id", flat=True)
     )
 
-    avatar, _ = UserAvatar.objects.get_or_create(user=request.user)
+    avatar, _ = Avatar.objects.get_or_create(user=request.user)
 
     data = []
     for item in items:
@@ -78,15 +78,11 @@ def equip(request, cosmetic_id):
     ).exists():
         return Response({"error": "You don't own this item"}, status=403)
 
-    avatar, _ = UserAvatar.objects.get_or_create(user=request.user)
+    profile, _ = Avatar.objects.get_or_create(user=request.user)
+    profile.equipped_cosmetic = item
+    profile.save()
 
-    avatar.equipped_cosmetic = item
-    avatar.save()
-
-    return Response({
-        "is_equipped": True,
-        "cosmetic_id": item.cosmeticID
-    })
+    return Response({"is_equipped": True})
 
 
 @api_view(["GET"])
@@ -103,15 +99,17 @@ def my_cosmetics(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_avatar(request):
-    avatar, _ = UserAvatar.objects.get_or_create(user=request.user)
+    profile, _ = Avatar.objects.get_or_create(user=request.user)
 
-    if not avatar.equipped_cosmetic:
-        default = CosmeticItem.objects.get(cosmeticID="CSM_0001")
-        avatar.equipped_cosmetic = default
-        avatar.save()
+    item = profile.equipped_cosmetic
+
+    if not item:
+        item = CosmeticItem.objects.get(cosmeticID="CSM_0008")
+        profile.equipped_cosmetic = item
+        profile.save()
 
     return Response({
-        "url": avatar.equipped_cosmetic.image.url,
-        "name": avatar.equipped_cosmetic.item_name
+        "url": item.image.url,
+        "name": item.item_name
     })
     

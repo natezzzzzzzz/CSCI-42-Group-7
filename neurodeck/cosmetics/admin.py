@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import CosmeticItem, UserCosmetic, UserAvatar
+from .models import CosmeticItem, UserCosmetic, Avatar
 
 
 @admin.register(CosmeticItem)
@@ -14,7 +14,3 @@ class UserCosmeticAdmin(admin.ModelAdmin):
     list_display = ("userID", "cosmeticID", "date_purchased")
     search_fields = ("userID__username", "cosmeticID__item_name")
 
-
-@admin.register(UserAvatar)
-class UserAvatarAdmin(admin.ModelAdmin):
-    list_display = ("user", "equipped_cosmetic", "updated_at")
