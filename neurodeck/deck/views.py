@@ -616,28 +616,7 @@ def solo_session_complete(request):
     correct_count = request.data.get("correct_count", 0)
     total_count = request.data.get("total_count", 0)
 
-    from achievements.engine import (
-        AchievementEngine,
-        CardStudiedEvent,
-        AnswerSubmittedEvent,
-        SoloSessionCompletedEvent,
-    )
-
-    # Fire card studied events for the bulk count
-    for _ in range(cards_studied):
-        AchievementEngine.process_event(
-            CardStudiedEvent(user=request.user, mode="solo")
-        )
-
-    # Fire answer events for the bulk counts
-    for _ in range(correct_count):
-        AchievementEngine.process_event(
-            AnswerSubmittedEvent(user=request.user, is_correct=True, mode="solo")
-        )
-    for _ in range(total_count - correct_count):
-        AchievementEngine.process_event(
-            AnswerSubmittedEvent(user=request.user, is_correct=False, mode="solo")
-        )
+    from achievements.engine import AchievementEngine, SoloSessionCompletedEvent
 
     # Fire solo session complete event
     new_achievements = AchievementEngine.process_event(

@@ -60,49 +60,45 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     async function load() {
-      try {
-        const [statsData, activityData, recentData, leaderboardData] = await Promise.all([
-          fetchAchievementStats(),
-          fetchActivityData(),
-          fetchRecentUnlocks(10),
-          fetchLeaderboard(),
-        ]);
-        setStats(statsData);
-        setActivity(activityData);
-        setRecentAchievements(recentData.recent || []);
-        setLeaderboard(leaderboardData.leaderboard || []);
-      } catch (e) {
-        console.error("Failed to load analytics:", e);
-      } finally {
-        setLoading(false);
-      }
+      await Promise.allSettled([
+        fetchAchievementStats().then(setStats).catch((e) => console.error("Stats failed:", e)),
+        fetchActivityData().then(setActivity).catch((e) => console.error("Activity failed:", e)),
+        fetchRecentUnlocks(10).then((d) => setRecentAchievements(d.recent || [])).catch((e) => console.error("Recent failed:", e)),
+        fetchLeaderboard().then((d) => setLeaderboard(d.leaderboard || [])).catch((e) => console.error("Leaderboard failed:", e)),
+      ]);
+      setLoading(false);
     }
     load();
   }, []);
 
   if (loading) return <div className="an-loading">Loading analytics...</div>;
-  if (!stats || !activity) return <div className="an-loading">No data available.</div>;
+  if (!stats && !activity) return (
+    <div className="an-loading">
+      Failed to load analytics data.
+      <button className="an-retry-btn" onClick={() => window.location.reload()}>Retry</button>
+    </div>
+  );
 
-  const correctPct = stats.total_answers > 0
+  const correctPct = stats && stats.total_answers > 0
     ? Math.round((stats.total_correct_answers / stats.total_answers) * 100)
     : 0;
 
   // Build pie chart data for categories
-  const categoryData = Object.entries(activity.categories).map(([key, val]) => ({
+  const categoryData = activity ? Object.entries(activity.categories).map(([key, val]) => ({
     name: CATEGORY_LABELS[key] || key,
     unlocked: val.unlocked,
     remaining: val.total - val.unlocked,
     total: val.total,
-  }));
+  })) : [];
 
   // Build category bar data
-  const categoryBarData = Object.entries(activity.categories).map(([key, val]) => ({
+  const categoryBarData = activity ? Object.entries(activity.categories).map(([key, val]) => ({
     name: CATEGORY_LABELS[key] || key,
     unlocked: val.unlocked,
     remaining: val.total - val.unlocked,
     total: val.total,
     fill: CATEGORY_COLORS[key] || "#6366f1",
-  }));
+  })) : [];
 
   // Find current user's leaderboard entry
   const myEntry = leaderboard.find((e) => e.username === user?.username);
@@ -117,6 +113,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* ── Key Metrics ── */}
+      {stats && (
       <div className="an-metrics">
         <div className="an-metric-card">
           <span className="an-metric-value">{stats.total_cards_studied}</span>
@@ -143,6 +140,7 @@ export default function AnalyticsPage() {
           <span className="an-metric-label">Study Streak (days)</span>
         </div>
       </div>
+      )}
 
       {/* ── Player Tier Card ── */}
       {myEntry && (() => {
@@ -176,6 +174,7 @@ export default function AnalyticsPage() {
       })()}
 
       {/* ── Charts Row ── */}
+      {activity && (
       <div className="an-charts-row">
         {/* Activity Over Time */}
         <div className="an-chart-card">
@@ -244,8 +243,10 @@ export default function AnalyticsPage() {
           </ResponsiveContainer>
         </div>
       </div>
+      )}
 
       {/* ── Category Progress Bars ── */}
+      {categoryBarData.length > 0 && (
       <div className="an-chart-card" style={{ marginBottom: "1.5rem" }}>
         <h3 className="an-chart-title">Achievement Category Progress</h3>
         <div className="an-tier-bars">
@@ -266,8 +267,10 @@ export default function AnalyticsPage() {
           })}
         </div>
       </div>
+      )}
 
       {/* ── Accuracy Ring ── */}
+      {stats && (
       <div className="an-charts-row">
         <div className="an-chart-card">
           <h3 className="an-chart-title">Answer Accuracy</h3>
@@ -311,6 +314,7 @@ export default function AnalyticsPage() {
           )}
         </div>
       </div>
+      )}
 
       {/* ── Global Leaderboard ── */}
       <div className="an-chart-card" style={{ marginBottom: "1.5rem" }}>
