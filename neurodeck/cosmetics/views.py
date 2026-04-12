@@ -72,26 +72,21 @@ def equip(request, cosmetic_id):
     except CosmeticItem.DoesNotExist:
         return Response({"error": "Item not found"}, status=404)
 
-    try:
-        UserCosmetic.objects.get(
-            userID=request.user,
-            cosmeticID=item
-        )
-    except UserCosmetic.DoesNotExist:
-        return Response({"error": "You don't own this item"}, status=404)
+    if not UserCosmetic.objects.filter(
+        userID=request.user,
+        cosmeticID=item
+    ).exists():
+        return Response({"error": "You don't own this item"}, status=403)
 
     avatar, _ = UserAvatar.objects.get_or_create(user=request.user)
 
-    if avatar.equipped_cosmetic == item:
-        avatar.equipped_cosmetic = None
-        equipped = False
-    else:
-        avatar.equipped_cosmetic = item
-        equipped = True
-
+    avatar.equipped_cosmetic = item
     avatar.save()
 
-    return Response({"is_equipped": equipped})
+    return Response({
+        "is_equipped": True,
+        "cosmetic_id": item.cosmeticID
+    })
 
 
 @api_view(["GET"])
@@ -101,7 +96,8 @@ def my_cosmetics(request):
         userID=request.user
     ).select_related("cosmeticID")
 
-    return Response(UserCosmeticSerializer(owned, many=True).data)
+    serializer = UserCosmeticSerializer(owned, many=True)
+    return Response(serializer.data)
 
 
 @api_view(["GET"])
@@ -109,6 +105,13 @@ def my_cosmetics(request):
 def get_avatar(request):
     avatar, _ = UserAvatar.objects.get_or_create(user=request.user)
 
+    if not avatar.equipped_cosmetic:
+        default = CosmeticItem.objects.get(cosmeticID="CSM_0001")
+        avatar.equipped_cosmetic = default
+        avatar.save()
+
     return Response({
-        "equipped": avatar.equipped_cosmetic.image.url if avatar.equipped_cosmetic else None
+        "url": avatar.equipped_cosmetic.image.url,
+        "name": avatar.equipped_cosmetic.item_name
     })
+    

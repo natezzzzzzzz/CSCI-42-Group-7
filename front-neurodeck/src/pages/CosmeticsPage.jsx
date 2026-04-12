@@ -70,7 +70,7 @@ export default function CosmeticsPage() {
           <div key={item.CosmeticID} className="csm-card">
 
             <img
-              src={item.Image}
+              src={`http://127.0.0.1:8000${item.Image}`}
               alt={item.ItemName}
               className="csm-image"
             />

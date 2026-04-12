@@ -9,18 +9,17 @@ class CosmeticItemSerializer(serializers.ModelSerializer):
 
 
 class UserCosmeticSerializer(serializers.ModelSerializer):
-    CosmeticID = serializers.CharField(source="cosmeticID.cosmeticID")
-    ItemName = serializers.CharField(source="cosmeticID.item_name")
-    Image = serializers.ImageField(source="cosmeticID.image")
-    Cost = serializers.IntegerField(source="cosmeticID.cost")
+    cosmeticID = serializers.CharField(source="cosmeticID.cosmeticID")
+    item_name = serializers.CharField(source="cosmeticID.item_name")
+    image = serializers.ImageField(source="cosmeticID.image")
+    cost = serializers.IntegerField(source="cosmeticID.cost")
 
     class Meta:
         model = UserCosmetic
         fields = [
-            "CosmeticID",
-            "ItemName",
-            "Image",
-            "Cost",
-            "is_equipped",
+            "cosmeticID",
+            "item_name",
+            "image",
+            "cost",
             "date_purchased",
         ]

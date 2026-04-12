@@ -3,7 +3,7 @@ import '../styles/index.css'
 import 'bulma/css/bulma.min.css';
 import { useNavigate } from "react-router-dom";
 
-function MainMenu({ setPage }) {
+function MainMenu() {
   const navigate = useNavigate();
   return (
     <section className="section">
@@ -72,7 +72,11 @@ function MainMenu({ setPage }) {
         <div className="has-text-centered mt-6">
           <button
             className="button is-danger"
-            onClick={() => setPage("login")}
+            onClick={() => {
+              localStorage.removeItem("access");
+              localStorage.removeItem("refresh");
+              navigate("/");
+            }}
           >
             Logout
           </button>
