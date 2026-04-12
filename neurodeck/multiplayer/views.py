@@ -2,6 +2,7 @@ import random
 import string
 
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -19,27 +20,36 @@ def _finalize_game(room):
     Create GameResult records and fire achievement events for all active participants.
     Called when a multiplayer game ends (natural finish, manual end, or last player leaves).
     Idempotent — skips if GameResults already exist for this room.
+    Returns a dict mapping user IDs to lists of newly unlocked achievement dicts.
     """
     from achievements.engine import AchievementEngine, GameCompletedEvent
     from achievements.models import GameResult
 
     if GameResult.objects.filter(room=room).exists():
-        return
+        return {}
 
     participants = RoomParticipant.objects.filter(
         Room=room, IsActive=True
     ).order_by("-Score")
 
     if not participants.exists():
-        return
+        return {}
 
-    # Determine winner score for margin calculation
+    participant_count = participants.count()
     scores = [p.Score for p in participants]
     top_score = scores[0] if scores else 0
     second_score = scores[1] if len(scores) > 1 else 0
 
+    # Require 2+ participants for win/margin achievements to prevent
+    # single-player games from trivially unlocking multiplayer awards.
+    has_enough_players = participant_count >= 2
+
+    achievements_by_user = {}
+
     for idx, p in enumerate(participants, 1):
-        is_winner = idx == 1
+        # All players tied for the top score are winners (not just the first
+        # in the ordering).  Only counts when there are 2+ participants.
+        is_winner = has_enough_players and p.Score == top_score
         margin = (top_score - second_score) if is_winner else 0
 
         GameResult.objects.create(
@@ -51,7 +61,7 @@ def _finalize_game(room):
             position=idx,
         )
 
-        AchievementEngine.process_event(
+        newly_unlocked = AchievementEngine.process_event(
             GameCompletedEvent(
                 user=p.User,
                 room=room,
@@ -59,10 +69,21 @@ def _finalize_game(room):
                 total_questions=room.TotalRounds,
                 is_winner=is_winner,
                 position=idx,
-                participant_count=participants.count(),
+                participant_count=participant_count,
                 margin=margin,
             )
         )
+
+        achievements_by_user[p.User.id] = [
+            {
+                "name": ua.achievement.name,
+                "description": ua.achievement.description,
+                "icon": ua.achievement.icon,
+            }
+            for ua in newly_unlocked
+        ]
+
+    return achievements_by_user
 
 
 def generate_room_code():
@@ -157,8 +178,9 @@ class NextCardView(APIView):
             room.CurrentCardIndex = next_index
             room.save(update_fields=["Status", "CurrentCardIndex"])
             RoomParticipant.objects.filter(Room=room, IsActive=True).update(CurrentCardSubmitted=False)
-            _finalize_game(room)
-            return Response({"game_over": True})
+            achievements_by_user = _finalize_game(room)
+            my_achievements = achievements_by_user.get(request.user.id, [])
+            return Response({"game_over": True, "new_achievements": my_achievements})
 
         room.CurrentCardIndex = next_index
         room.save(update_fields=["CurrentCardIndex"])
@@ -258,6 +280,10 @@ class LeaveRoomView(APIView):
                 # No other active participants — mark room finished
                 room.Status = "finished"
                 room.save(update_fields=["Status"])
+                # The leaving user was already marked inactive, so they won't
+                # appear in _finalize_game results. Remaining players (if any
+                # were marked inactive earlier) also won't. This is correct:
+                # nobody deserves completion achievements for an abandoned game.
                 _finalize_game(room)
 
         return Response({"detail": "Left room successfully."})
@@ -267,7 +293,8 @@ class RoomDetailView(APIView):
     """
     GET /multiplayer/<room_code>/
     Returns full room info including all participants and scores.
-    Used for polling by all clients.
+    Used for polling by all clients. When the room is finished, also
+    returns any achievements the current user unlocked during this game.
     """
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -275,7 +302,25 @@ class RoomDetailView(APIView):
     def get(self, request, room_code):
         room = get_object_or_404(MultiplayerRoom, RoomCode=room_code.upper())
         serializer = MultiplayerRoomSerializer(room)
-        return Response(serializer.data)
+        data = serializer.data
+
+        if room.Status == "finished":
+            from achievements.models import UserAchievement
+            from datetime import timedelta
+            recent = UserAchievement.objects.filter(
+                user=request.user,
+                unlocked_at__gte=timezone.now() - timedelta(minutes=5),
+            ).select_related("achievement")
+            data["new_achievements"] = [
+                {
+                    "name": ua.achievement.name,
+                    "description": ua.achievement.description,
+                    "icon": ua.achievement.icon,
+                }
+                for ua in recent
+            ]
+
+        return Response(data)
 
 
 class StartGameView(APIView):
@@ -345,10 +390,11 @@ class EndGameView(APIView):
 
         room.Status = "finished"
         room.save()
-        _finalize_game(room)
+        achievements_by_user = _finalize_game(room)
 
         serializer = MultiplayerRoomSerializer(room)
-        return Response(serializer.data)
+        my_achievements = achievements_by_user.get(request.user.id, [])
+        return Response({**serializer.data, "new_achievements": my_achievements})
 
 
 class SubmitAnswerView(APIView):

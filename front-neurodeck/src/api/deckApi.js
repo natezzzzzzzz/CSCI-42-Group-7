@@ -15,6 +15,13 @@ export function getImageUrl(path) {
 }
 
 async function handleResponse(res) {
+  if (res.status === 401) {
+    // Token expired or invalid — clear credentials and redirect to login
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    window.location.href = "/";
+    throw new Error("Session expired. Please log in again.");
+  }
   if (!res.ok) {
     let message = `Request failed (${res.status})`;
     try {

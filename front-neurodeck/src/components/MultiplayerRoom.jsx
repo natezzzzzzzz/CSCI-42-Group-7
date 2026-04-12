@@ -253,6 +253,7 @@ export default function MultiplayerRoom({ onLeave }) {
   const pollRef = useRef(null);
   const roomRef = useRef(null);
   const checkSyncRef = useRef(null);
+  const shownGameEndAchievements = useRef(false);
 
   useEffect(() => { roomRef.current = room; }, [room]);
   useEffect(() => () => clearInterval(pollRef.current), []);
@@ -329,10 +330,18 @@ export default function MultiplayerRoom({ onLeave }) {
           }
         }
 
-        if (data.Status === 'finished') setPhase('finished');
+        if (data.Status === 'finished') {
+          // Show game-end achievement toasts once (for non-hosts who detect
+          // the game ending via polling rather than a direct API call).
+          if (!shownGameEndAchievements.current && data.new_achievements && data.new_achievements.length > 0) {
+            data.new_achievements.forEach((a) => notifyAchievement(a));
+            shownGameEndAchievements.current = true;
+          }
+          setPhase('finished');
+        }
       } catch { /* ignore transient network errors */ }
     }, 3000);
-  }, [handleFetchCard]);
+  }, [handleFetchCard, notifyAchievement]);
 
   // Host-only: advances the index on the server then immediately fetches the new card
   // for the host. Non-hosts will pick up the change on their next poll tick (≤3 s).
@@ -347,7 +356,14 @@ export default function MultiplayerRoom({ onLeave }) {
         setIsLoading(false);
         return;
       }
-      if (result.game_over) { setPhase('finished'); return; }
+      if (result.game_over) {
+        if (result.new_achievements && result.new_achievements.length > 0) {
+          result.new_achievements.forEach((a) => notifyAchievement(a));
+          shownGameEndAchievements.current = true;
+        }
+        setPhase('finished');
+        return;
+      }
       // Rapid-poll until all participants show CurrentCardSubmitted=True
       if (checkSyncRef.current) clearTimeout(checkSyncRef.current);
       setSyncWarning(null);
@@ -378,7 +394,14 @@ export default function MultiplayerRoom({ onLeave }) {
     setIsLoading(true);
     try {
       const result = await apiNextCard(code, true); // pass confirm=true
-      if (result.game_over) { setPhase('finished'); return; }
+      if (result.game_over) {
+        if (result.new_achievements && result.new_achievements.length > 0) {
+          result.new_achievements.forEach((a) => notifyAchievement(a));
+          shownGameEndAchievements.current = true;
+        }
+        setPhase('finished');
+        return;
+      }
       if (checkSyncRef.current) clearTimeout(checkSyncRef.current);
       setSyncWarning(null);
       const checkSync = async () => {
@@ -455,6 +478,10 @@ export default function MultiplayerRoom({ onLeave }) {
     try {
       const data = await apiEndGame(roomRef.current.RoomCode);
       applyRoomUpdate(data);
+      if (data.new_achievements && data.new_achievements.length > 0) {
+        data.new_achievements.forEach((a) => notifyAchievement(a));
+        shownGameEndAchievements.current = true;
+      }
       setPhase('finished');
     } catch (e) {
       setError(e.message ?? 'Failed to end game.');
