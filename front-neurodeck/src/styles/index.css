@@ -1027,6 +1027,20 @@ a:hover {
   color: var(--neutral-mid);
   font-size: 1.1rem;
 }
+.an-retry-btn {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.5rem 1.2rem;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+.an-retry-btn:hover {
+  filter: brightness(1.1);
+}
 
 .an-header {
   display: flex;

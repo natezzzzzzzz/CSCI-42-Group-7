@@ -163,16 +163,30 @@ def activity_data(request):
         user=user, played_at__date__gte=start_date
     )
 
-    # Build date-indexed dicts
+    # Build date-indexed dicts — multiplayer correct/wrong and solo rating breakdown
     daily_correct = {}
     daily_wrong = {}
+    daily_again = {}
+    daily_hard = {}
+    daily_good = {}
+    daily_easy = {}
     daily_games = {}
     for rec in answer_qs:
         d = rec.answered_at.date()
-        if rec.is_correct:
-            daily_correct[d] = daily_correct.get(d, 0) + 1
-        else:
-            daily_wrong[d] = daily_wrong.get(d, 0) + 1
+        if rec.mode == "multiplayer":
+            if rec.is_correct:
+                daily_correct[d] = daily_correct.get(d, 0) + 1
+            else:
+                daily_wrong[d] = daily_wrong.get(d, 0) + 1
+        elif rec.mode == "solo" and rec.rating:
+            if rec.rating == 1:
+                daily_again[d] = daily_again.get(d, 0) + 1
+            elif rec.rating == 2:
+                daily_hard[d] = daily_hard.get(d, 0) + 1
+            elif rec.rating == 3:
+                daily_good[d] = daily_good.get(d, 0) + 1
+            elif rec.rating == 4:
+                daily_easy[d] = daily_easy.get(d, 0) + 1
     for gr in game_qs:
         d = gr.played_at.date()
         daily_games[d] = daily_games.get(d, 0) + 1
@@ -186,6 +200,10 @@ def activity_data(request):
                 "correct": daily_correct.get(d, 0),
                 "wrong": daily_wrong.get(d, 0),
                 "games": daily_games.get(d, 0),
+                "again": daily_again.get(d, 0),
+                "hard": daily_hard.get(d, 0),
+                "good": daily_good.get(d, 0),
+                "easy": daily_easy.get(d, 0),
             }
         )
 

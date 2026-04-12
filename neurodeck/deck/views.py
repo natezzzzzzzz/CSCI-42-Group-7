@@ -525,6 +525,16 @@ def solo_rate_card(request):
                 )
             )
 
+        # Record the answer for analytics
+        from achievements.models import AnswerRecord
+        AnswerRecord.objects.create(
+            user=request.user,
+            card=card,
+            is_correct=is_correct,
+            rating=rating,
+            mode="solo",
+        )
+
     # Compute previews for the card's new state (useful if re-queued)
     previews = {}
     for rv in [1, 2, 3, 4]:
@@ -616,28 +626,7 @@ def solo_session_complete(request):
     correct_count = request.data.get("correct_count", 0)
     total_count = request.data.get("total_count", 0)
 
-    from achievements.engine import (
-        AchievementEngine,
-        CardStudiedEvent,
-        AnswerSubmittedEvent,
-        SoloSessionCompletedEvent,
-    )
-
-    # Fire card studied events for the bulk count
-    for _ in range(cards_studied):
-        AchievementEngine.process_event(
-            CardStudiedEvent(user=request.user, mode="solo")
-        )
-
-    # Fire answer events for the bulk counts
-    for _ in range(correct_count):
-        AchievementEngine.process_event(
-            AnswerSubmittedEvent(user=request.user, is_correct=True, mode="solo")
-        )
-    for _ in range(total_count - correct_count):
-        AchievementEngine.process_event(
-            AnswerSubmittedEvent(user=request.user, is_correct=False, mode="solo")
-        )
+    from achievements.engine import AchievementEngine, SoloSessionCompletedEvent
 
     # Fire solo session complete event
     new_achievements = AchievementEngine.process_event(

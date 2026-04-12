@@ -15,15 +15,19 @@ export function getImageUrl(path) {
 }
 
 async function handleResponse(res) {
-  const data = await res.json();
   if (!res.ok) {
-    const message =
-      typeof data === "object"
-        ? Object.values(data).flat().join(" ")
-        : "Request failed";
+    let message = `Request failed (${res.status})`;
+    try {
+      const data = await res.json();
+      if (typeof data === "object") {
+        message = Object.values(data).flat().join(" ");
+      }
+    } catch {
+      // Response body wasn't JSON — use the default message
+    }
     throw new Error(message);
   }
-  return data;
+  return res.json();
 }
 
 export async function fetchDecks() {
