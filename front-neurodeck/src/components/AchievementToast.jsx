@@ -44,10 +44,9 @@ function AchievementToast({ achievement, onDismiss }) {
 
   return (
     <div className={`ach-toast ${exiting ? "ach-toast-exit" : "ach-toast-enter"}`}>
-      <div className="ach-toast-icon">{achievement.icon}</div>
       <div className="ach-toast-body">
         <div className="ach-toast-label">Achievement Unlocked!</div>
-        <div className="ach-toast-name">{achievement.name}</div>
+        <div className="ach-toast-name">{achievement.name} <span className="ach-toast-arrow">&#8594;</span> {achievement.description}</div>
       </div>
     </div>
   );
