@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { fetchDeckSettings, updateDeckSettings } from "../api/deckApi";
 
 export default function DeckSettingsModal({ deckId, onClose }) {
@@ -35,7 +36,7 @@ export default function DeckSettingsModal({ deckId, onClose }) {
     }
   };
 
-  return (
+  return createPortal(
     <div className="ds-overlay">
       {/* backdrop */}
       <div className="ds-backdrop" onClick={onClose} />
@@ -109,6 +110,7 @@ export default function DeckSettingsModal({ deckId, onClose }) {
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

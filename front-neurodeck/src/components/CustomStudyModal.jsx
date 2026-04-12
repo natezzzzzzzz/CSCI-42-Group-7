@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { fetchDeckStudyStats } from "../api/deckApi";
 
@@ -26,7 +27,7 @@ export default function CustomStudyModal({ deckId, deckName, onClose }) {
     ? stats.due_today.new + stats.due_today.learning + stats.due_today.review
     : 0;
 
-  return (
+  return createPortal(
     <div className="ds-overlay">
       {/* backdrop */}
       <div className="ds-backdrop" onClick={onClose} />
@@ -117,6 +118,7 @@ export default function CustomStudyModal({ deckId, deckName, onClose }) {
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
