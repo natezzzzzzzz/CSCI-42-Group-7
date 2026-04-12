@@ -1,10 +1,18 @@
-import React from "react";
+import React, { useContext } from "react";
 import '../styles/index.css'
 import 'bulma/css/bulma.min.css';
 import { useNavigate } from "react-router-dom";
+import AuthContext from "../context/AuthContext";
 
 function MainMenu({ setPage }) {
   const navigate = useNavigate();
+  const { logoutUser } = useContext(AuthContext);
+
+  const handleLogout = () => {
+    logoutUser();
+    navigate("/");
+  };
+
   return (
     <section className="section">
       <div className="container">
@@ -41,7 +49,7 @@ function MainMenu({ setPage }) {
           </div>
         </div>
 
-        <div className="columns"> {/* New row */}
+        <div className="columns">
 
           <div className="column" onClick={() => navigate("/decks")}>
             <div className="box shadow-sm">
@@ -50,7 +58,7 @@ function MainMenu({ setPage }) {
               </div>
           </div>
 
-          <div className="column" onClick={() => navigate("/multiplayer")}> 
+          <div className="column" onClick={() => navigate("/multiplayer")}>
             <div className="box shadow-sm">
               <h2> Multiplayer</h2>
               <p className="text-small">Play with friends</p>
@@ -58,20 +66,14 @@ function MainMenu({ setPage }) {
           </div>
         </div>
 
-        
-
-        
-
         <div className="has-text-centered mt-6">
           <button
             className="button is-danger"
-            onClick={() => setPage("login")}
+            onClick={handleLogout}
           >
             Logout
           </button>
         </div>
-
-        
 
       </div>
     </section>
