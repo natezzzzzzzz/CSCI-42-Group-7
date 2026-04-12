@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import '../styles/index.css';
 import 'bulma/css/bulma.min.css';
 import { useNavigate } from "react-router-dom";
+import AuthContext from "../context/AuthContext";
 
 function LoginPage() {
   const navigate = useNavigate();
+  const { loginUser } = useContext(AuthContext);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -15,23 +17,12 @@ function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/token/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        // simplejwt returns { detail: "No active account found..." } on bad creds
-        setError(data.detail || "Invalid email or password.");
-        return;
+      const success = await loginUser(email, password);
+      if (success) {
+        navigate("/main");
+      } else {
+        setError("Invalid email or password.");
       }
-
-      localStorage.setItem("access", data.access);
-      localStorage.setItem("refresh", data.refresh);
-      navigate("/main");
     } catch (err) {
       setError("Could not reach the server. Please try again.");
     } finally {
