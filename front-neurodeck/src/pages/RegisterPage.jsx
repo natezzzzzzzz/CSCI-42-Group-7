@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import '../styles/index.css';
 import 'bulma/css/bulma.min.css';
 import { useNavigate } from "react-router-dom";
-import { BASE_URL } from "../api/deckApi";
 
 function RegisterPage() {
   const navigate = useNavigate();
@@ -25,7 +24,7 @@ function RegisterPage() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${BASE_URL}/api/register/`, {
+      const res = await fetch("http://127.0.0.1:8000/api/register/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, email, password, password2 }),

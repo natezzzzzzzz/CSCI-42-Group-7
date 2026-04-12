@@ -64,30 +64,6 @@ export default function SoloGamePage() {
     if (!isFlipped) setIsFlipped(true);
   }, [isFlipped]);
 
-  // Keyboard shortcuts: 1-4 to rate when flipped, Space/Enter to flip
-  useEffect(() => {
-    const handleKey = (e) => {
-      if (!currentCard) return;
-      if (isFlipped && !ratingInProgress) {
-        const map = { "1": 1, "2": 2, "3": 3, "4": 4 };
-        if (map[e.key]) {
-          e.preventDefault();
-          handleRate(map[e.key]);
-        }
-      }
-      if (!isFlipped && (e.key === " " || e.key === "Enter")) {
-        // Only flip if the active element is the card or body (not a button/input)
-        const tag = document.activeElement?.tagName;
-        if (tag === "BODY" || document.activeElement?.closest(".sg-flashcard")) {
-          e.preventDefault();
-          handleFlip();
-        }
-      }
-    };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [isFlipped, currentCard, ratingInProgress, handleRate, handleFlip]);
-
   const advanceCard = useCallback(() => {
     setIsFlipped(false);
     setLastScheduling(null);
@@ -139,7 +115,6 @@ export default function SoloGamePage() {
 
   const handleFinishEarly = useCallback(async () => {
     if (completionReported.current) return;
-    if (!window.confirm("Are you sure you want to end this study session early?")) return;
     completionReported.current = true;
     const duration = Math.round((Date.now() - sessionStartRef.current) / 1000);
     try {
@@ -283,15 +258,6 @@ export default function SoloGamePage() {
         <div
           className={`mp-card sg-flashcard mp-card-enter ${isFlipped ? "sg-flipped" : ""}`}
           onClick={handleFlip}
-          tabIndex={0}
-          role="button"
-          aria-label={isFlipped ? "Answer side. Press number keys 1-4 to rate." : "Question side. Press Enter or Space to reveal the answer."}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              handleFlip();
-            }
-          }}
         >
           <span className="mp-question-label">
             {isFlipped ? "Answer" : "Question"}

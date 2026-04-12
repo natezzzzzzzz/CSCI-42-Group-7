@@ -1,17 +1,10 @@
 import React from "react";
-import '../styles/index.css';
+import '../styles/index.css'
 import 'bulma/css/bulma.min.css';
 import { useNavigate } from "react-router-dom";
 
-function MainMenu() {
+function MainMenu({ setPage }) {
   const navigate = useNavigate();
-
-  const handleLogout = () => {
-    localStorage.removeItem("access");
-    localStorage.removeItem("refresh");
-    navigate("/");
-  };
-
   return (
     <section className="section">
       <div className="container">
@@ -26,14 +19,21 @@ function MainMenu() {
         </div>
 
         <div className="columns">
-          <div className="column" onClick={() => navigate("/achievements")} style={{ cursor: "pointer" }}>
+          <div className="column">
+            <div className="box shadow-sm">
+              <h2 className="h6">Profile</h2>
+              <p className="text-small">View your account details</p>
+            </div>
+          </div>
+
+          <div className="column" onClick = {() => navigate("/achievements")}>
             <div className="box shadow-sm">
               <h2 className="h6">Achievements</h2>
               <p className="text-small">View your achievements</p>
             </div>
           </div>
 
-          <div className="column" onClick={() => navigate("/analytics")} style={{ cursor: "pointer" }}>
+          <div className="column" onClick={() => navigate("/analytics")}>
             <div className="box shadow-sm">
               <h2 className="h6">Analytics</h2>
               <p className="text-small">View activity insights</p>
@@ -41,30 +41,37 @@ function MainMenu() {
           </div>
         </div>
 
-        <div className="columns">
-          <div className="column" onClick={() => navigate("/decks")} style={{ cursor: "pointer" }}>
+        <div className="columns"> {/* New row */}
+
+          <div className="column" onClick={() => navigate("/decks")}>
             <div className="box shadow-sm">
-              <h2>Decks</h2>
+              <h2> Decks</h2>
               <p className="text-small">View and manage your flashcard decks</p>
-            </div>
+              </div>
           </div>
 
-          <div className="column" onClick={() => navigate("/multiplayer")} style={{ cursor: "pointer" }}>
+          <div className="column" onClick={() => navigate("/multiplayer")}> 
             <div className="box shadow-sm">
-              <h2>Multiplayer</h2>
+              <h2> Multiplayer</h2>
               <p className="text-small">Play with friends</p>
-            </div>
+              </div>
           </div>
         </div>
+
+        
+
+        
 
         <div className="has-text-centered mt-6">
           <button
             className="button is-danger"
-            onClick={handleLogout}
+            onClick={() => setPage("login")}
           >
             Logout
           </button>
         </div>
+
+        
 
       </div>
     </section>

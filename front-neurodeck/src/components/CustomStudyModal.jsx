@@ -26,14 +26,8 @@ export default function CustomStudyModal({ deckId, deckName, onClose }) {
     ? stats.due_today.new + stats.due_today.learning + stats.due_today.review
     : 0;
 
-  useEffect(() => {
-    const handleEsc = (e) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", handleEsc);
-    return () => document.removeEventListener("keydown", handleEsc);
-  }, [onClose]);
-
   return (
-    <div className="ds-overlay" role="dialog" aria-modal="true" aria-label="Study Options">
+    <div className="ds-overlay">
       {/* backdrop */}
       <div className="ds-backdrop" onClick={onClose} />
 

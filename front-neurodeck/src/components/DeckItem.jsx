@@ -31,7 +31,6 @@ export default function DeckItem({ deck, onDelete, onUpdate }) {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete this deck? This cannot be undone.")) return;
     try {
       await deleteDeck(deck.DeckID);
       onDelete(deck.DeckID);

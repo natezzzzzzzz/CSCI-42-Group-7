@@ -451,7 +451,6 @@ export default function MultiplayerRoom({ onLeave }) {
   };
 
   const handleEndGame = async () => {
-    if (!window.confirm("Are you sure you want to end the game for all players?")) return;
     clearError();
     try {
       const data = await apiEndGame(roomRef.current.RoomCode);
@@ -463,7 +462,6 @@ export default function MultiplayerRoom({ onLeave }) {
   };
 
   const handleLeaveRoom = async () => {
-    if (!window.confirm("Are you sure you want to leave this room?")) return;
     const code = roomRef.current?.RoomCode;
     if (code) {
       try { await apiLeaveRoom(code); } catch { /* ignore */ }

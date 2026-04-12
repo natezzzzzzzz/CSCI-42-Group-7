@@ -9,19 +9,11 @@ export default function DeckPage() {
   const [decks, setDecks] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     const load = async () => {
-      try {
-        const data = await fetchDecks();
-        setDecks(data);
-      } catch (err) {
-        setError(err.message || "Failed to load decks");
-      } finally {
-        setLoading(false);
-      }
+      const data = await fetchDecks();
+      setDecks(data);
     };
     load();
   }, []);
@@ -42,7 +34,7 @@ export default function DeckPage() {
     <div className="container mp-page">
       <div className="mp-page-header">
         <button className="mp-back-btn" onClick={() => navigate("/main")}> ← Back to Menu </button>
-
+        
         <div className="mp-page-title">
           <h1 className="h4">My Decks</h1>
           <p className="tagline mp-subtitle">Create and manage your flashcard decks.</p>
@@ -70,24 +62,13 @@ export default function DeckPage() {
         />
       </div>
 
-      {loading && (
-        <div style={{ textAlign: "center", padding: "2rem" }}>
-          <span className="mp-spinner" style={{ width: 32, height: 32 }} />
-          <p style={{ color: "var(--neutral-mid)", marginTop: "1rem" }}>Loading decks...</p>
-        </div>
-      )}
-
-      {error && <p className="mp-error">{error}</p>}
-
-      {!loading && !error && (
-        <DeckList
-          decks={decks}
-          searchQuery={searchQuery}
-          filterCategory={filterCategory}
-          onUpdate={handleDeckUpdate}
-          onDelete={handleDeckDelete}
-        />
-      )}
+      <DeckList
+        decks={decks}
+        searchQuery={searchQuery}
+        filterCategory={filterCategory}
+        onUpdate={handleDeckUpdate}
+        onDelete={handleDeckDelete}
+      />
     </div>
   );
 }
