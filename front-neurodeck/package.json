@@ -7,11 +7,15 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "frontend": "vite",
+    "backend": "cd ../neurodeck && python manage.py runserver",
+    "start": "concurrently -n \"DJANGO,REACT\" -c \"green,blue\" \"npm run backend\" \"npm run frontend\""
   },
   "dependencies": {
     "axios": "^1.14.0",
     "bulma": "^1.0.4",
+    "concurrently": "^9.2.1",
     "jwt-decode": "^4.0.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
