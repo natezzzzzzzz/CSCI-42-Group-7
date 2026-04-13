@@ -16,7 +16,6 @@ export function getImageUrl(path) {
 
 async function handleResponse(res) {
   if (res.status === 401) {
-    // Token expired or invalid — clear credentials and redirect to login
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");
     window.location.href = "/";
@@ -39,11 +38,7 @@ async function handleResponse(res) {
 
 async function get(url, opts = {}) {
   return handleResponse(
-    await fetch(url, {
-      method: "GET",
-      headers: authHeaders(),
-      ...opts,
-    })
+    await fetch(url, { method: "GET", headers: authHeaders(), ...opts })
   );
 }
 
@@ -69,21 +64,13 @@ async function patch(url, body = {}) {
 
 async function del(url) {
   return handleResponse(
-    await fetch(url, {
-      method: "DELETE",
-      headers: authHeaders(),
-    })
+    await fetch(url, { method: "DELETE", headers: authHeaders() })
   );
 }
 
-//
-// ─────────────────────────────────────────────
-// DECK API
-// ─────────────────────────────────────────────
-//
+// ─── DECK ────────────────────────────────────
 
-export const fetchDecks = () =>
-  get(`${BASE_URL}/deck/api/decks/`);
+export const fetchDecks = () => get(`${BASE_URL}/deck/api/decks/`);
 
 export const createDeck = (data) =>
   post(`${BASE_URL}/deck/api/decks/create/`, data);
@@ -103,40 +90,8 @@ export const updateDeckSettings = (id, data) =>
 export const fetchDeckStudyStats = (id) =>
   get(`${BASE_URL}/deck/api/decks/${id}/study-stats/`);
 
-//
-// ─────────────────────────────────────────────
-// CARDS
-// ─────────────────────────────────────────────
-//
+// ─── CARDS ───────────────────────────────────
 
-export const fetchCards = (id) =>
-  get(`${BASE_URL}/deck/api/decks/${id}/cards/`);
-
-export const createCard = (id, data) =>
-  post(`${BASE_URL}/deck/api/decks/${id}/cards/create/`, data);
-
-export const updateCard = (deckId, cardId, data) =>
-  patch(`${BASE_URL}/deck/api/decks/${deckId}/cards/${cardId}/update/`, data);
-
-export const deleteCard = (deckId, cardId) =>
-  del(`${BASE_URL}/deck/api/decks/${deckId}/cards/${cardId}/delete/`);
-
-//
-// ─────────────────────────────────────────────
-// SOLO
-// ─────────────────────────────────────────────
-//
-
-export const startSoloSession = (deckId, daysAhead = 0) =>
-  post(`${BASE_URL}/deck/api/solo/start-session/`, {
-    deck_id: deckId,
-    days_ahead: daysAhead,
-  });
-
-export const rateSoloCard = (cardId, rating) =>
-  post(`${BASE_URL}/deck/api/solo/rate-card/`, {
-    card_id: cardId,
-    rating,
 export async function createCard(deckId, cardData) {
   const hasImages = cardData.QuestionImage || cardData.AnswerImage;
 
@@ -160,36 +115,68 @@ export async function createCard(deckId, cardData) {
     headers: authHeaders(),
     body: JSON.stringify(cardData),
   });
+  return handleResponse(res);
+}
 
-export const reportSoloCardStudied = (cardId, isCorrect = null) =>
-  post(`${BASE_URL}/deck/api/solo/card-studied/`, {
-    card_id: cardId,
-    is_correct: isCorrect,
 export async function updateCard(deckId, cardId, cardData) {
-  const hasImages = cardData.QuestionImage instanceof File || cardData.AnswerImage instanceof File;
+  const hasImages =
+    cardData.QuestionImage instanceof File || cardData.AnswerImage instanceof File;
   const hasClearFlags = cardData.clear_QuestionImage || cardData.clear_AnswerImage;
 
   if (hasImages || hasClearFlags) {
     const formData = new FormData();
     if (cardData.Question) formData.append("Question", cardData.Question);
     if (cardData.Answer !== undefined) formData.append("Answer", cardData.Answer);
-    if (cardData.QuestionImage instanceof File) formData.append("QuestionImage", cardData.QuestionImage);
-    if (cardData.AnswerImage instanceof File) formData.append("AnswerImage", cardData.AnswerImage);
+    if (cardData.QuestionImage instanceof File)
+      formData.append("QuestionImage", cardData.QuestionImage);
+    if (cardData.AnswerImage instanceof File)
+      formData.append("AnswerImage", cardData.AnswerImage);
     if (cardData.clear_QuestionImage) formData.append("clear_QuestionImage", "true");
     if (cardData.clear_AnswerImage) formData.append("clear_AnswerImage", "true");
     const token = localStorage.getItem("access");
-    const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/cards/${cardId}/update/`, {
-      method: "PATCH",
-      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      body: formData,
-    });
+    const res = await fetch(
+      `${BASE_URL}/deck/api/decks/${deckId}/cards/${cardId}/update/`,
+      {
+        method: "PATCH",
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: formData,
+      }
+    );
     return handleResponse(res);
   }
 
-  const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/cards/${cardId}/update/`, {
-    method: "PATCH",
-    headers: authHeaders(),
-    body: JSON.stringify(cardData),
+  const res = await fetch(
+    `${BASE_URL}/deck/api/decks/${deckId}/cards/${cardId}/update/`,
+    {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify(cardData),
+    }
+  );
+  return handleResponse(res);
+}
+
+export const fetchCards = (id) =>
+  get(`${BASE_URL}/deck/api/decks/${id}/cards/`);
+
+export const deleteCard = (deckId, cardId) =>
+  del(`${BASE_URL}/deck/api/decks/${deckId}/cards/${cardId}/delete/`);
+
+// ─── SOLO ─────────────────────────────────────
+
+export const startSoloSession = (deckId, daysAhead = 0) =>
+  post(`${BASE_URL}/deck/api/solo/start-session/`, {
+    deck_id: deckId,
+    days_ahead: daysAhead,
+  });
+
+export const rateSoloCard = (cardId, rating) =>
+  post(`${BASE_URL}/deck/api/solo/rate-card/`, { card_id: cardId, rating });
+
+export const reportSoloCardStudied = (cardId, isCorrect = null) =>
+  post(`${BASE_URL}/deck/api/solo/card-studied/`, {
+    card_id: cardId,
+    is_correct: isCorrect,
   });
 
 export const reportSoloSessionComplete = (
@@ -209,14 +196,9 @@ export const reportSoloSessionComplete = (
     session_duration_seconds: durationSeconds,
   });
 
-//
-// ─────────────────────────────────────────────
-// MULTIPLAYER
-// ─────────────────────────────────────────────
-//
+// ─── MULTIPLAYER ──────────────────────────────
 
-export const fetchMyDecks = () =>
-  get(`${BASE_URL}/multiplayer/decks/`);
+export const fetchMyDecks = () => get(`${BASE_URL}/multiplayer/decks/`);
 
 export const createRoom = (deckId) =>
   post(`${BASE_URL}/multiplayer/create-room/`, { deck_id: deckId });
@@ -224,8 +206,7 @@ export const createRoom = (deckId) =>
 export const joinRoom = (code) =>
   post(`${BASE_URL}/multiplayer/join-room/`, { room_code: code });
 
-export const getRoomDetail = (code) =>
-  get(`${BASE_URL}/multiplayer/${code}/`);
+export const getRoomDetail = (code) => get(`${BASE_URL}/multiplayer/${code}/`);
 
 export const startGame = (code, rounds) =>
   post(`${BASE_URL}/multiplayer/${code}/start/`, { rounds });
@@ -233,8 +214,7 @@ export const startGame = (code, rounds) =>
 export const nextCard = (code, confirm = false) =>
   post(`${BASE_URL}/multiplayer/${code}/next/`, { confirm });
 
-export const endGame = (code) =>
-  post(`${BASE_URL}/multiplayer/${code}/end/`);
+export const endGame = (code) => post(`${BASE_URL}/multiplayer/${code}/end/`);
 
 export const getFlashcard = (code) =>
   get(`${BASE_URL}/multiplayer/${code}/flashcard/`);
@@ -247,65 +227,34 @@ export const submitAnswer = (code, cardId, answer) =>
   });
 
 export const leaveRoom = (code) =>
-  post(`${BASE_URL}/multiplayer/leave-room/`, {
-    room_code: code,
-  });
+  post(`${BASE_URL}/multiplayer/leave-room/`, { room_code: code });
 
-//
-// ─────────────────────────────────────────────
-// ACHIEVEMENTS
-// ─────────────────────────────────────────────
-//
+// ─── ACHIEVEMENTS ─────────────────────────────
 
-export const fetchAchievements = () =>
-  get(`${BASE_URL}/achievements/`);
+export const fetchAchievements = () => get(`${BASE_URL}/achievements/`);
 
-export const fetchAchievementStats = () =>
-  get(`${BASE_URL}/achievements/stats/`);
+export const fetchAchievementStats = () => get(`${BASE_URL}/achievements/stats/`);
 
-export const fetchActivityData = () =>
-  get(`${BASE_URL}/achievements/activity/`);
+export const fetchActivityData = () => get(`${BASE_URL}/achievements/activity/`);
 
 export const fetchRecentUnlocks = (limit = 5) =>
-  get(`${BASE_URL}/achievements/recent/?limit=${limit}`);
+  get(`${BASE_URL}/achievements/?limit=${limit}`);
 
-//
-// ─────────────────────────────────────────────
-// COSMETICS
-// ─────────────────────────────────────────────
-//
+export const fetchLeaderboard = () =>
+  get(`${BASE_URL}/achievements/leaderboard/`);
 
-export const fetchCosmeticShop = () =>
-  get(`${BASE_URL}/cosmetics/shop/`);
+// ─── COSMETICS ────────────────────────────────
+
+export const fetchCosmeticShop = () => get(`${BASE_URL}/cosmetics/shop/`);
 
 export const purchaseCosmetic = (id) =>
   post(`${BASE_URL}/cosmetics/shop/${id}/purchase/`);
 
+// ─── PROFILE ──────────────────────────────────
 
-//
-// ─────────────────────────────────────────────
-// PROFILE 
-// ─────────────────────────────────────────────
-//
+export const fetchAvatar = () => get(`${BASE_URL}/cosmetics/avatar/`);
 
-export const fetchAvatar = () =>
-  get(`${BASE_URL}/cosmetics/avatar/`);
-
-export const fetchMyCosmetics = () =>
-  get(`${BASE_URL}/cosmetics/my/`);
+export const fetchMyCosmetics = () => get(`${BASE_URL}/cosmetics/my/`);
 
 export const equipCosmetic = (id) =>
   post(`${BASE_URL}/cosmetics/shop/${id}/equip/`);
-export async function fetchActivityData() {
-  const res = await fetch(`${BASE_URL}/achievements/activity/`, {
-    headers: authHeaders(),
-  });
-  return handleResponse(res);
-}
-
-export async function fetchLeaderboard() {
-  const res = await fetch(`${BASE_URL}/achievements/leaderboard/`, {
-    headers: authHeaders(),
-  });
-  return handleResponse(res);
-}
