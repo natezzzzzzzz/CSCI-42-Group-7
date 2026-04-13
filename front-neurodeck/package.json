@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "frontend": "vite",
-    "backend": "cd ../neurodeck && python manage.py runserver",
+    "backend": "cd ../neurodeck && python manage.py migrate && python manage.py runserver",
     "start": "concurrently -n \"DJANGO,REACT\" -c \"green,blue\" \"npm run backend\" \"npm run frontend\""
   },
   "dependencies": {
