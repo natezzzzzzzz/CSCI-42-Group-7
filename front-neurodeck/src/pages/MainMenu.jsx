@@ -4,7 +4,7 @@ import 'bulma/css/bulma.min.css';
 import { useNavigate } from "react-router-dom";
 import AuthContext from "../context/AuthContext";
 
-function MainMenu({ setPage }) {
+function MainMenu() {
   const navigate = useNavigate();
   const { logoutUser } = useContext(AuthContext);
 
@@ -27,7 +27,7 @@ function MainMenu({ setPage }) {
         </div>
 
         <div className="columns">
-          <div className="column">
+          <div className="column" onClick = {() => navigate("/profile")}>
             <div className="box shadow-sm">
               <h2 className="h6">Profile</h2>
               <p className="text-small">View your account details</p>
@@ -63,6 +63,13 @@ function MainMenu({ setPage }) {
               <h2> Multiplayer</h2>
               <p className="text-small">Play with friends</p>
               </div>
+          </div>
+
+          <div className="column" onClick={() => navigate("/shop")}>
+            <div className="box shadow-sm">
+              <h2>Cosmetics</h2>
+              <p className="text-small">Shop and equip items</p>
+            </div>
           </div>
         </div>
 

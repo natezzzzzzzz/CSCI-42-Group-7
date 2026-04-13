@@ -10,6 +10,8 @@ import './styles/App.css';
 import SoloGamePage from "./pages/SoloGamePage";
 import AchievementsPage from "./pages/AchievementsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import CosmeticsPage from "./pages/CosmeticsPage";
+import ProfilePage from "./pages/ProfilePage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -36,6 +38,12 @@ function App() {
           } />
           <Route path="/analytics" element={
             <ProtectedRoute><AnalyticsPage /></ProtectedRoute>
+          } />
+          <Route path="/shop" element={
+            <ProtectedRoute><CosmeticsPage /></ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute><ProfilePage /></ProtectedRoute>
           } />
         </Routes>
       </Router>

@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'deck',
     'multiplayer',
     'achievements',
+    'cosmetics',
     'seed',
 ]
 AUTH_USER_MODEL = 'api.User'
