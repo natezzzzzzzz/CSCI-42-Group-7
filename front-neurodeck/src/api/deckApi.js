@@ -37,73 +37,106 @@ async function handleResponse(res) {
   return res.json();
 }
 
-export async function fetchDecks() {
-  const res = await fetch(`${BASE_URL}/deck/api/decks/`, {
-    headers: authHeaders(),
-  });
-  return handleResponse(res);
+async function get(url, opts = {}) {
+  return handleResponse(
+    await fetch(url, {
+      method: "GET",
+      headers: authHeaders(),
+      ...opts,
+    })
+  );
 }
 
-export async function createDeck(deckData) {
-  const res = await fetch(`${BASE_URL}/deck/api/decks/create/`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify(deckData),
-  });
-  return handleResponse(res);
+async function post(url, body = {}) {
+  return handleResponse(
+    await fetch(url, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+    })
+  );
 }
 
-export async function updateDeck(deckId, deckData) {
-  const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/update/`, {
-    method: "PATCH",
-    headers: authHeaders(),
-    body: JSON.stringify(deckData),
-  });
-  return handleResponse(res);
+async function patch(url, body = {}) {
+  return handleResponse(
+    await fetch(url, {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+    })
+  );
 }
 
-export async function deleteDeck(deckId) {
-  const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/delete/`, {
-    method: "DELETE",
-    headers: authHeaders(),
-  });
-  return handleResponse(res);
+async function del(url) {
+  return handleResponse(
+    await fetch(url, {
+      method: "DELETE",
+      headers: authHeaders(),
+    })
+  );
 }
 
-// ─── Deck Settings API ──────────────────────────────────────────────────────
+//
+// ─────────────────────────────────────────────
+// DECK API
+// ─────────────────────────────────────────────
+//
 
-export async function fetchDeckSettings(deckId) {
-  const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/settings/`, {
-    headers: authHeaders(),
+export const fetchDecks = () =>
+  get(`${BASE_URL}/deck/api/decks/`);
+
+export const createDeck = (data) =>
+  post(`${BASE_URL}/deck/api/decks/create/`, data);
+
+export const updateDeck = (id, data) =>
+  patch(`${BASE_URL}/deck/api/decks/${id}/update/`, data);
+
+export const deleteDeck = (id) =>
+  del(`${BASE_URL}/deck/api/decks/${id}/delete/`);
+
+export const fetchDeckSettings = (id) =>
+  get(`${BASE_URL}/deck/api/decks/${id}/settings/`);
+
+export const updateDeckSettings = (id, data) =>
+  patch(`${BASE_URL}/deck/api/decks/${id}/settings/`, data);
+
+export const fetchDeckStudyStats = (id) =>
+  get(`${BASE_URL}/deck/api/decks/${id}/study-stats/`);
+
+//
+// ─────────────────────────────────────────────
+// CARDS
+// ─────────────────────────────────────────────
+//
+
+export const fetchCards = (id) =>
+  get(`${BASE_URL}/deck/api/decks/${id}/cards/`);
+
+export const createCard = (id, data) =>
+  post(`${BASE_URL}/deck/api/decks/${id}/cards/create/`, data);
+
+export const updateCard = (deckId, cardId, data) =>
+  patch(`${BASE_URL}/deck/api/decks/${deckId}/cards/${cardId}/update/`, data);
+
+export const deleteCard = (deckId, cardId) =>
+  del(`${BASE_URL}/deck/api/decks/${deckId}/cards/${cardId}/delete/`);
+
+//
+// ─────────────────────────────────────────────
+// SOLO
+// ─────────────────────────────────────────────
+//
+
+export const startSoloSession = (deckId, daysAhead = 0) =>
+  post(`${BASE_URL}/deck/api/solo/start-session/`, {
+    deck_id: deckId,
+    days_ahead: daysAhead,
   });
-  return handleResponse(res);
-}
 
-export async function updateDeckSettings(deckId, settings) {
-  const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/settings/`, {
-    method: "PATCH",
-    headers: authHeaders(),
-    body: JSON.stringify(settings),
-  });
-  return handleResponse(res);
-}
-
-export async function fetchDeckStudyStats(deckId) {
-  const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/study-stats/`, {
-    headers: authHeaders(),
-  });
-  return handleResponse(res);
-}
-
-// ─── Card API ─────────────────────────────────────────────────────────────────
-
-export async function fetchCards(deckId) {
-  const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/cards/`, {
-    headers: authHeaders(),
-  });
-  return handleResponse(res);
-}
-
+export const rateSoloCard = (cardId, rating) =>
+  post(`${BASE_URL}/deck/api/solo/rate-card/`, {
+    card_id: cardId,
+    rating,
 export async function createCard(deckId, cardData) {
   const hasImages = cardData.QuestionImage || cardData.AnswerImage;
 
@@ -127,9 +160,11 @@ export async function createCard(deckId, cardData) {
     headers: authHeaders(),
     body: JSON.stringify(cardData),
   });
-  return handleResponse(res);
-}
 
+export const reportSoloCardStudied = (cardId, isCorrect = null) =>
+  post(`${BASE_URL}/deck/api/solo/card-studied/`, {
+    card_id: cardId,
+    is_correct: isCorrect,
 export async function updateCard(deckId, cardId, cardData) {
   const hasImages = cardData.QuestionImage instanceof File || cardData.AnswerImage instanceof File;
   const hasClearFlags = cardData.clear_QuestionImage || cardData.clear_AnswerImage;
@@ -156,179 +191,111 @@ export async function updateCard(deckId, cardId, cardData) {
     headers: authHeaders(),
     body: JSON.stringify(cardData),
   });
-  return handleResponse(res);
-}
 
-export async function deleteCard(deckId, cardId) {
-  const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/cards/${cardId}/delete/`, {
-    method: "DELETE",
-    headers: authHeaders(),
+export const reportSoloSessionComplete = (
+  deckId,
+  cardsStudied,
+  correctCount,
+  totalCount,
+  cardsMastered = 0,
+  durationSeconds = 0
+) =>
+  post(`${BASE_URL}/deck/api/solo/complete/`, {
+    deck_id: deckId,
+    cards_studied: cardsStudied,
+    correct_count: correctCount,
+    total_count: totalCount,
+    cards_mastered: cardsMastered,
+    session_duration_seconds: durationSeconds,
   });
-  return handleResponse(res);
-}
 
-// ─── Multiplayer API ──────────────────────────────────────────────────────────
+//
+// ─────────────────────────────────────────────
+// MULTIPLAYER
+// ─────────────────────────────────────────────
+//
 
-export async function fetchMyDecks() {
-  const res = await fetch(`${BASE_URL}/multiplayer/decks/`, {
-    headers: authHeaders(),
+export const fetchMyDecks = () =>
+  get(`${BASE_URL}/multiplayer/decks/`);
+
+export const createRoom = (deckId) =>
+  post(`${BASE_URL}/multiplayer/create-room/`, { deck_id: deckId });
+
+export const joinRoom = (code) =>
+  post(`${BASE_URL}/multiplayer/join-room/`, { room_code: code });
+
+export const getRoomDetail = (code) =>
+  get(`${BASE_URL}/multiplayer/${code}/`);
+
+export const startGame = (code, rounds) =>
+  post(`${BASE_URL}/multiplayer/${code}/start/`, { rounds });
+
+export const nextCard = (code, confirm = false) =>
+  post(`${BASE_URL}/multiplayer/${code}/next/`, { confirm });
+
+export const endGame = (code) =>
+  post(`${BASE_URL}/multiplayer/${code}/end/`);
+
+export const getFlashcard = (code) =>
+  get(`${BASE_URL}/multiplayer/${code}/flashcard/`);
+
+export const submitAnswer = (code, cardId, answer) =>
+  post(`${BASE_URL}/multiplayer/submit-answer/`, {
+    room_code: code,
+    card_id: cardId,
+    answer,
   });
-  return handleResponse(res);
-}
 
-export async function createRoom(deckId) {
-  const res = await fetch(`${BASE_URL}/multiplayer/create-room/`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify({ deck_id: deckId }),
+export const leaveRoom = (code) =>
+  post(`${BASE_URL}/multiplayer/leave-room/`, {
+    room_code: code,
   });
-  return handleResponse(res);
-}
 
-export async function joinRoom(roomCode) {
-  const res = await fetch(`${BASE_URL}/multiplayer/join-room/`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify({ room_code: roomCode }),
-  });
-  return handleResponse(res);
-}
+//
+// ─────────────────────────────────────────────
+// ACHIEVEMENTS
+// ─────────────────────────────────────────────
+//
 
-export async function getRoomDetail(roomCode) {
-  const res = await fetch(`${BASE_URL}/multiplayer/${roomCode}/`, {
-    headers: authHeaders(),
-  });
-  return handleResponse(res);
-}
+export const fetchAchievements = () =>
+  get(`${BASE_URL}/achievements/`);
 
-export async function startGame(roomCode, rounds) {
-  const body = rounds != null ? JSON.stringify({ rounds }) : JSON.stringify({});
-  const res = await fetch(`${BASE_URL}/multiplayer/${roomCode}/start/`, {
-    method: "POST",
-    headers: authHeaders(),
-    body,
-  });
-  return handleResponse(res);
-}
+export const fetchAchievementStats = () =>
+  get(`${BASE_URL}/achievements/stats/`);
 
-// ✅ Fixed: was using `api.post` (axios) but this file uses raw fetch
-export async function nextCard(roomCode, confirm = false) {
-  const res = await fetch(`${BASE_URL}/multiplayer/${roomCode}/next/`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify({ confirm }),
-  });
-  return handleResponse(res);
-}
+export const fetchActivityData = () =>
+  get(`${BASE_URL}/achievements/activity/`);
 
-export async function endGame(roomCode) {
-  const res = await fetch(`${BASE_URL}/multiplayer/${roomCode}/end/`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify({}),
-  });
-  return handleResponse(res);
-}
+export const fetchRecentUnlocks = (limit = 5) =>
+  get(`${BASE_URL}/achievements/recent/?limit=${limit}`);
 
-export async function getFlashcard(roomCode) {
-  const res = await fetch(`${BASE_URL}/multiplayer/${roomCode}/flashcard/`, {
-    headers: authHeaders(),
-  });
-  return handleResponse(res);
-}
+//
+// ─────────────────────────────────────────────
+// COSMETICS
+// ─────────────────────────────────────────────
+//
 
-export async function submitAnswer(roomCode, cardId, answer) {
-  const res = await fetch(`${BASE_URL}/multiplayer/submit-answer/`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify({ room_code: roomCode, card_id: cardId, answer }),
-  });
-  return handleResponse(res);
-}
+export const fetchCosmeticShop = () =>
+  get(`${BASE_URL}/cosmetics/shop/`);
 
-export async function leaveRoom(roomCode) {
-  const res = await fetch(`${BASE_URL}/multiplayer/leave-room/`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify({ room_code: roomCode }),
-  });
-  return handleResponse(res);
-}
+export const purchaseCosmetic = (id) =>
+  post(`${BASE_URL}/cosmetics/shop/${id}/purchase/`);
 
-// ─── Achievements API ────────────────────────────────────────────────────────
 
-export async function fetchAchievements() {
-  const res = await fetch(`${BASE_URL}/achievements/`, {
-    headers: authHeaders(),
-  });
-  return handleResponse(res);
-}
+//
+// ─────────────────────────────────────────────
+// PROFILE 
+// ─────────────────────────────────────────────
+//
 
-export async function fetchAchievementStats() {
-  const res = await fetch(`${BASE_URL}/achievements/stats/`, {
-    headers: authHeaders(),
-  });
-  return handleResponse(res);
-}
+export const fetchAvatar = () =>
+  get(`${BASE_URL}/cosmetics/avatar/`);
 
-export async function fetchRecentUnlocks(limit = 5) {
-  const res = await fetch(`${BASE_URL}/achievements/recent/?limit=${limit}`, {
-    headers: authHeaders(),
-  });
-  return handleResponse(res);
-}
+export const fetchMyCosmetics = () =>
+  get(`${BASE_URL}/cosmetics/my/`);
 
-// ─── Solo Session API ───────────────────────────────────────────────────────
-
-export async function startSoloSession(deckId, daysAhead = 0) {
-  const body = { deck_id: deckId };
-  if (daysAhead > 0) body.days_ahead = daysAhead;
-  const res = await fetch(`${BASE_URL}/deck/api/solo/start-session/`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify(body),
-  });
-  return handleResponse(res);
-}
-
-export async function rateSoloCard(cardId, rating) {
-  const res = await fetch(`${BASE_URL}/deck/api/solo/rate-card/`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify({ card_id: cardId, rating }),
-  });
-  return handleResponse(res);
-}
-
-export async function reportSoloCardStudied(cardId, isCorrect = null) {
-  const body = { card_id: cardId };
-  if (isCorrect !== null) body.is_correct = isCorrect;
-  const res = await fetch(`${BASE_URL}/deck/api/solo/card-studied/`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify(body),
-  });
-  return handleResponse(res);
-}
-
-export async function reportSoloSessionComplete(deckId, cardsStudied, correctCount, totalCount, cardsMastered = 0, durationSeconds = 0) {
-  const res = await fetch(`${BASE_URL}/deck/api/solo/complete/`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify({
-      deck_id: deckId,
-      cards_studied: cardsStudied,
-      correct_count: correctCount,
-      total_count: totalCount,
-      cards_mastered: cardsMastered,
-      session_duration_seconds: durationSeconds,
-    }),
-  });
-  return handleResponse(res);
-}
-
-// ─── Analytics API ──────────────────────────────────────────────────────────
-
+export const equipCosmetic = (id) =>
+  post(`${BASE_URL}/cosmetics/shop/${id}/equip/`);
 export async function fetchActivityData() {
   const res = await fetch(`${BASE_URL}/achievements/activity/`, {
     headers: authHeaders(),

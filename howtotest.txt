@@ -3,3 +3,7 @@ open your environment
 
 if you havent installed the frameworks, then do this
 pip install -r requirements.txt
+
+to load avatars:
+cd neurodeck
+python manage.py loaddata cosmetics.json

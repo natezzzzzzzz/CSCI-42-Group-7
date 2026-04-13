@@ -73,6 +73,7 @@ class UserStats(models.Model):
     best_consecutive_study_days = models.PositiveIntegerField(default=0)
     spaced_repetition_reviews = models.PositiveIntegerField(default=0)
     cards_mastered = models.PositiveIntegerField(default=0)
+    currency = models.PositiveIntegerField(default=0) 
 
     class Meta:
         verbose_name_plural = "user stats"
