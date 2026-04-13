@@ -132,6 +132,7 @@ class AnswerRecord(models.Model):
     )
     is_correct = models.BooleanField()
     answer_given = models.CharField(max_length=255, blank=True)
+    rating = models.PositiveSmallIntegerField(null=True, blank=True)  # Solo: 1=Again, 2=Hard, 3=Good, 4=Easy
     answered_at = models.DateTimeField(auto_now_add=True)
     mode = models.CharField(max_length=12, choices=MODE_CHOICES, default="multiplayer")
 

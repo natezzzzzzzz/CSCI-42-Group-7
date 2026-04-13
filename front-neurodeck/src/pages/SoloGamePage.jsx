@@ -5,6 +5,7 @@ import {
   rateSoloCard,
   reportSoloSessionComplete,
 } from "../api/deckApi";
+import { getImageUrl } from "../api/deckApi";
 import { useAchievementNotify } from "../components/AchievementToast";
 
 const MAX_REQUEUES_PER_CARD = 3;
@@ -261,9 +262,23 @@ export default function SoloGamePage() {
           <span className="mp-question-label">
             {isFlipped ? "Answer" : "Question"}
           </span>
-          <p className="mp-question-text sg-card-text">
-            {isFlipped ? currentCard.Answer : currentCard.Question}
-          </p>
+          {isFlipped ? (
+            <>
+              {currentCard.AnswerImage && (
+                <img src={getImageUrl(currentCard.AnswerImage)} alt="Answer" className="sg-card-image" />
+              )}
+              {currentCard.Answer && currentCard.Answer !== "None" && (
+                <p className="mp-question-text sg-card-text">{currentCard.Answer}</p>
+              )}
+            </>
+          ) : (
+            <>
+              {currentCard.QuestionImage && (
+                <img src={getImageUrl(currentCard.QuestionImage)} alt="Question" className="sg-card-image" />
+              )}
+              <p className="mp-question-text sg-card-text">{currentCard.Question}</p>
+            </>
+          )}
           {!isFlipped && (
             <p className="sg-flip-hint">Click to reveal answer</p>
           )}

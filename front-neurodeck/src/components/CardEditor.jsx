@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { fetchCards, createCard, updateCard, deleteCard } from "../api/deckApi";
+import { fetchCards, createCard, updateCard, deleteCard, getImageUrl } from "../api/deckApi";
 
 export default function CardEditor({ deckId }) {
   const [cards, setCards] = useState([]);
@@ -9,11 +9,17 @@ export default function CardEditor({ deckId }) {
 
   const [newQuestion, setNewQuestion] = useState("");
   const [newAnswer, setNewAnswer] = useState("");
+  const [newQuestionImage, setNewQuestionImage] = useState(null);
+  const [newAnswerImage, setNewAnswerImage] = useState(null);
   const [addError, setAddError] = useState("");
 
   const [editingId, setEditingId] = useState(null);
   const [editQuestion, setEditQuestion] = useState("");
   const [editAnswer, setEditAnswer] = useState("");
+  const [editQuestionImage, setEditQuestionImage] = useState(null);
+  const [editAnswerImage, setEditAnswerImage] = useState(null);
+  const [editQuestionImagePreview, setEditQuestionImagePreview] = useState(null);
+  const [editAnswerImagePreview, setEditAnswerImagePreview] = useState(null);
   const [editError, setEditError] = useState("");
 
   useEffect(() => {
@@ -39,10 +45,14 @@ export default function CardEditor({ deckId }) {
       const card = await createCard(deckId, {
         Question: newQuestion,
         Answer: newAnswer,
+        QuestionImage: newQuestionImage,
+        AnswerImage: newAnswerImage,
       });
       setCards((prev) => [...prev, card]);
       setNewQuestion("");
       setNewAnswer("");
+      setNewQuestionImage(null);
+      setNewAnswerImage(null);
     } catch (err) {
       setAddError(err.message || "Failed to add card.");
     }
@@ -52,6 +62,10 @@ export default function CardEditor({ deckId }) {
     setEditingId(card.CardID);
     setEditQuestion(card.Question);
     setEditAnswer(card.Answer);
+    setEditQuestionImage(null);
+    setEditAnswerImage(null);
+    setEditQuestionImagePreview(card.QuestionImage ? getImageUrl(card.QuestionImage) : null);
+    setEditAnswerImagePreview(card.AnswerImage ? getImageUrl(card.AnswerImage) : null);
     setEditError("");
   }
 
@@ -59,19 +73,32 @@ export default function CardEditor({ deckId }) {
     setEditingId(null);
     setEditQuestion("");
     setEditAnswer("");
+    setEditQuestionImage(null);
+    setEditAnswerImage(null);
+    setEditQuestionImagePreview(null);
+    setEditAnswerImagePreview(null);
     setEditError("");
   }
 
   async function handleSaveEdit(cardId) {
     setEditError("");
     try {
-      const updated = await updateCard(deckId, cardId, {
+      const payload = {
         Question: editQuestion,
         Answer: editAnswer,
-      });
-      setCards((prev) =>
-        prev.map((c) => (c.CardID === cardId ? updated : c))
-      );
+      };
+      if (editQuestionImage) payload.QuestionImage = editQuestionImage;
+      if (editAnswerImage) payload.AnswerImage = editAnswerImage;
+      // Clear images if user removed them
+      if (!editQuestionImagePreview && !editQuestionImage && cards.find((c) => c.CardID === cardId)?.QuestionImage) {
+        payload.clear_QuestionImage = true;
+      }
+      if (!editAnswerImagePreview && !editAnswerImage && cards.find((c) => c.CardID === cardId)?.AnswerImage) {
+        payload.clear_AnswerImage = true;
+      }
+
+      const updated = await updateCard(deckId, cardId, payload);
+      setCards((prev) => prev.map((c) => (c.CardID === cardId ? updated : c)));
       cancelEditing();
     } catch (err) {
       setEditError(err.message || "Failed to update card.");
@@ -123,6 +150,22 @@ export default function CardEditor({ deckId }) {
               onChange={(e) => setNewAnswer(e.target.value)}
             />
           </div>
+        </div>
+        <div className="field">
+          <label className="mp-label">Question Image (optional)</label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setNewQuestionImage(e.target.files[0] || null)}
+          />
+        </div>
+        <div className="field">
+          <label className="mp-label">Answer Image (optional)</label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setNewAnswerImage(e.target.files[0] || null)}
+          />
         </div>
         {addError && <p className="help is-danger">{addError}</p>}
         <div className="field">
@@ -182,6 +225,60 @@ export default function CardEditor({ deckId }) {
                   />
                 </div>
               </div>
+              <div className="field">
+                <label className="mp-label">Question Image</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setEditQuestionImage(e.target.files[0] || null)}
+                />
+                {(editQuestionImagePreview || editQuestionImage) && (
+                  <div className="sg-image-preview">
+                    <img
+                      src={editQuestionImage ? URL.createObjectURL(editQuestionImage) : editQuestionImagePreview}
+                      alt="Question"
+                      className="sg-card-image-preview"
+                    />
+                    <button
+                      type="button"
+                      className="mp-btn mp-btn-ghost sg-remove-image-btn"
+                      onClick={() => {
+                        setEditQuestionImage(null);
+                        setEditQuestionImagePreview(null);
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="field">
+                <label className="mp-label">Answer Image</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setEditAnswerImage(e.target.files[0] || null)}
+                />
+                {(editAnswerImagePreview || editAnswerImage) && (
+                  <div className="sg-image-preview">
+                    <img
+                      src={editAnswerImage ? URL.createObjectURL(editAnswerImage) : editAnswerImagePreview}
+                      alt="Answer"
+                      className="sg-card-image-preview"
+                    />
+                    <button
+                      type="button"
+                      className="mp-btn mp-btn-ghost sg-remove-image-btn"
+                      onClick={() => {
+                        setEditAnswerImage(null);
+                        setEditAnswerImagePreview(null);
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </div>
               {editError && <p className="help is-danger">{editError}</p>}
               <div className="buttons">
                 <button
@@ -200,9 +297,23 @@ export default function CardEditor({ deckId }) {
               <p className="text-small">
                 <strong>Q:</strong> {card.Question}
               </p>
+              {card.QuestionImage && (
+                <img
+                  src={getImageUrl(card.QuestionImage)}
+                  alt="Question"
+                  className="sg-card-image-thumb"
+                />
+              )}
               <p className="text-small">
                 <strong>A:</strong> {card.Answer || <em>No answer yet</em>}
               </p>
+              {card.AnswerImage && (
+                <img
+                  src={getImageUrl(card.AnswerImage)}
+                  alt="Answer"
+                  className="sg-card-image-thumb"
+                />
+              )}
               <div className="buttons">
                 <button
                   className="button is-small"

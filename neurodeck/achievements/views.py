@@ -4,6 +4,8 @@ from rest_framework.response import Response
 
 from datetime import timedelta
 
+from django.db.models import OuterRef, Subquery, Sum
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from .models import Achievement, AnswerRecord, GameResult, UserAchievement, UserStats
@@ -161,16 +163,30 @@ def activity_data(request):
         user=user, played_at__date__gte=start_date
     )
 
-    # Build date-indexed dicts
+    # Build date-indexed dicts — multiplayer correct/wrong and solo rating breakdown
     daily_correct = {}
     daily_wrong = {}
+    daily_again = {}
+    daily_hard = {}
+    daily_good = {}
+    daily_easy = {}
     daily_games = {}
     for rec in answer_qs:
         d = rec.answered_at.date()
-        if rec.is_correct:
-            daily_correct[d] = daily_correct.get(d, 0) + 1
-        else:
-            daily_wrong[d] = daily_wrong.get(d, 0) + 1
+        if rec.mode == "multiplayer":
+            if rec.is_correct:
+                daily_correct[d] = daily_correct.get(d, 0) + 1
+            else:
+                daily_wrong[d] = daily_wrong.get(d, 0) + 1
+        elif rec.mode == "solo" and rec.rating:
+            if rec.rating == 1:
+                daily_again[d] = daily_again.get(d, 0) + 1
+            elif rec.rating == 2:
+                daily_hard[d] = daily_hard.get(d, 0) + 1
+            elif rec.rating == 3:
+                daily_good[d] = daily_good.get(d, 0) + 1
+            elif rec.rating == 4:
+                daily_easy[d] = daily_easy.get(d, 0) + 1
     for gr in game_qs:
         d = gr.played_at.date()
         daily_games[d] = daily_games.get(d, 0) + 1
@@ -184,6 +200,10 @@ def activity_data(request):
                 "correct": daily_correct.get(d, 0),
                 "wrong": daily_wrong.get(d, 0),
                 "games": daily_games.get(d, 0),
+                "again": daily_again.get(d, 0),
+                "hard": daily_hard.get(d, 0),
+                "good": daily_good.get(d, 0),
+                "easy": daily_easy.get(d, 0),
             }
         )
 
@@ -235,3 +255,57 @@ def activity_data(request):
             "total_wrong": stats.total_answers - stats.total_correct_answers,
         }
     )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def leaderboard(request):
+    """GET /achievements/leaderboard/ — global ranking by correct answers with player tier."""
+    from django.db import models
+
+    max_points = Achievement.objects.aggregate(total=Sum("points"))["total"] or 0
+
+    all_stats = (
+        UserStats.objects
+        .select_related("user")
+        .annotate(earned_points=Coalesce(
+            Subquery(
+                UserAchievement.objects.filter(
+                    user_id=OuterRef("user_id")
+                ).values("user_id").annotate(
+                    total=Sum("achievement__points")
+                ).values("total"),
+                output_field=models.PositiveIntegerField(),
+            ),
+            0,
+        ))
+        .order_by("-total_correct_answers", "-earned_points")
+    )
+
+    TIER_THRESHOLDS = [
+        (80, "Diamond"),
+        (60, "Platinum"),
+        (40, "Gold"),
+        (20, "Silver"),
+    ]
+
+    result = []
+    for idx, s in enumerate(all_stats, start=1):
+        pct = (s.earned_points / max_points * 100) if max_points > 0 else 0
+        tier = "Bronze"
+        for threshold, name in TIER_THRESHOLDS:
+            if pct >= threshold:
+                tier = name
+                break
+        result.append(
+            {
+                "rank": idx,
+                "username": s.user.username,
+                "total_correct_answers": s.total_correct_answers,
+                "total_points": s.earned_points,
+                "max_points": max_points,
+                "tier": tier,
+            }
+        )
+
+    return Response({"leaderboard": result})

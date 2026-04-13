@@ -37,6 +37,8 @@ class Flashcard(models.Model):
     DeckID = models.ForeignKey("deck.Deck", on_delete=models.CASCADE, related_name='cards')
     Question = models.CharField(max_length=255, default="None")
     Answer = models.CharField(max_length=255, blank=True, null=True, default="None")
+    QuestionImage = models.ImageField(upload_to="card_images/", blank=True, null=True)
+    AnswerImage = models.ImageField(upload_to="card_images/", blank=True, null=True)
     FlashDateCreated = models.DateTimeField(auto_now_add=True)
     LastReviewed = models.DateTimeField(auto_now=True)
 

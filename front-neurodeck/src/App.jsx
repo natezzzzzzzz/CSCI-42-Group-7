@@ -12,6 +12,7 @@ import AchievementsPage from "./pages/AchievementsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import CosmeticsPage from "./pages/CosmeticsPage";
 import ProfilePage from "./pages/ProfilePage";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
@@ -20,14 +21,30 @@ function App() {
         <Routes>
           <Route path="/" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/main" element={<MainMenu />} />
-          <Route path="/decks" element={<DeckPage />} />
-          <Route path="/multiplayer" element={<MultiplayerPage />} />
-          <Route path="/solo/:deckId" element={<SoloGamePage />} />
-          <Route path="/achievements" element={<AchievementsPage />} />
-          <Route path="/analytics" element={<AnalyticsPage />} />
-          <Route path="/shop" element={<CosmeticsPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/main" element={
+            <ProtectedRoute><MainMenu /></ProtectedRoute>
+          } />
+          <Route path="/decks" element={
+            <ProtectedRoute><DeckPage /></ProtectedRoute>
+          } />
+          <Route path="/multiplayer" element={
+            <ProtectedRoute><MultiplayerPage /></ProtectedRoute>
+          } />
+          <Route path="/solo/:deckId" element={
+            <ProtectedRoute><SoloGamePage /></ProtectedRoute>
+          } />
+          <Route path="/achievements" element={
+            <ProtectedRoute><AchievementsPage /></ProtectedRoute>
+          } />
+          <Route path="/analytics" element={
+            <ProtectedRoute><AnalyticsPage /></ProtectedRoute>
+          } />
+          <Route path="/shop" element={
+            <ProtectedRoute><CosmeticsPage /></ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute><ProfilePage /></ProtectedRoute>
+          } />
         </Routes>
       </Router>
     </AchievementNotificationProvider>

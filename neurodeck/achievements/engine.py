@@ -121,6 +121,7 @@ class AchievementEngine:
             stats.solo_sessions_completed = F("solo_sessions_completed") + 1
             stats.total_decks_completed = F("total_decks_completed") + 1
             stats.save()
+            stats.refresh_from_db()  # ← fixed
 
         elif isinstance(event, GameCompletedEvent):
             stats.total_games_played = F("total_games_played") + 1
@@ -129,14 +130,15 @@ class AchievementEngine:
                 stats.total_games_won = F("total_games_won") + 1
                 stats.multiplayer_games_won = F("multiplayer_games_won") + 1
             stats.save()
+            stats.refresh_from_db()  # ← fixed
 
         elif isinstance(event, DeckCreatedEvent):
-            # No stats counter for deck creation yet, but hook is ready
             pass
 
         elif isinstance(event, CardMasteredEvent):
             stats.cards_mastered = F("cards_mastered") + 1
             stats.save()
+            stats.refresh_from_db()  # ← fixed
 
     @classmethod
     def _update_study_streak(cls, stats):
@@ -172,7 +174,6 @@ class AchievementEngine:
                     )
                     newly_unlocked.append(ua)
                 except Exception:
-                    # Duplicate unlock prevented by unique_together constraint
                     continue
 
         return newly_unlocked

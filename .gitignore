@@ -1,4 +1,6 @@
 .venv/
 venv/
+myenv/
 *.pyc
 *.sqlite3
+neurodeck/media/

@@ -8,16 +8,33 @@ function authHeaders() {
   };
 }
 
+export function getImageUrl(path) {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  return `${BASE_URL}${path}`;
+}
+
 async function handleResponse(res) {
-  const data = await res.json();
+  if (res.status === 401) {
+    // Token expired or invalid — clear credentials and redirect to login
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    window.location.href = "/";
+    throw new Error("Session expired. Please log in again.");
+  }
   if (!res.ok) {
-    const message =
-      typeof data === "object"
-        ? Object.values(data).flat().join(" ")
-        : "Request failed";
+    let message = `Request failed (${res.status})`;
+    try {
+      const data = await res.json();
+      if (typeof data === "object") {
+        message = Object.values(data).flat().join(" ");
+      }
+    } catch {
+      // Response body wasn't JSON — use the default message
+    }
     throw new Error(message);
   }
-  return data;
+  return res.json();
 }
 
 async function get(url, opts = {}) {
@@ -120,12 +137,59 @@ export const rateSoloCard = (cardId, rating) =>
   post(`${BASE_URL}/deck/api/solo/rate-card/`, {
     card_id: cardId,
     rating,
+export async function createCard(deckId, cardData) {
+  const hasImages = cardData.QuestionImage || cardData.AnswerImage;
+
+  if (hasImages) {
+    const formData = new FormData();
+    formData.append("Question", cardData.Question);
+    formData.append("Answer", cardData.Answer || "");
+    if (cardData.QuestionImage) formData.append("QuestionImage", cardData.QuestionImage);
+    if (cardData.AnswerImage) formData.append("AnswerImage", cardData.AnswerImage);
+    const token = localStorage.getItem("access");
+    const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/cards/create/`, {
+      method: "POST",
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: formData,
+    });
+    return handleResponse(res);
+  }
+
+  const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/cards/create/`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify(cardData),
   });
 
 export const reportSoloCardStudied = (cardId, isCorrect = null) =>
   post(`${BASE_URL}/deck/api/solo/card-studied/`, {
     card_id: cardId,
     is_correct: isCorrect,
+export async function updateCard(deckId, cardId, cardData) {
+  const hasImages = cardData.QuestionImage instanceof File || cardData.AnswerImage instanceof File;
+  const hasClearFlags = cardData.clear_QuestionImage || cardData.clear_AnswerImage;
+
+  if (hasImages || hasClearFlags) {
+    const formData = new FormData();
+    if (cardData.Question) formData.append("Question", cardData.Question);
+    if (cardData.Answer !== undefined) formData.append("Answer", cardData.Answer);
+    if (cardData.QuestionImage instanceof File) formData.append("QuestionImage", cardData.QuestionImage);
+    if (cardData.AnswerImage instanceof File) formData.append("AnswerImage", cardData.AnswerImage);
+    if (cardData.clear_QuestionImage) formData.append("clear_QuestionImage", "true");
+    if (cardData.clear_AnswerImage) formData.append("clear_AnswerImage", "true");
+    const token = localStorage.getItem("access");
+    const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/cards/${cardId}/update/`, {
+      method: "PATCH",
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: formData,
+    });
+    return handleResponse(res);
+  }
+
+  const res = await fetch(`${BASE_URL}/deck/api/decks/${deckId}/cards/${cardId}/update/`, {
+    method: "PATCH",
+    headers: authHeaders(),
+    body: JSON.stringify(cardData),
   });
 
 export const reportSoloSessionComplete = (
@@ -232,3 +296,16 @@ export const fetchMyCosmetics = () =>
 
 export const equipCosmetic = (id) =>
   post(`${BASE_URL}/cosmetics/shop/${id}/equip/`);
+export async function fetchActivityData() {
+  const res = await fetch(`${BASE_URL}/achievements/activity/`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(res);
+}
+
+export async function fetchLeaderboard() {
+  const res = await fetch(`${BASE_URL}/achievements/leaderboard/`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(res);
+}

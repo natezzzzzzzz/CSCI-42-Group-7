@@ -33,6 +33,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('is_correct', models.BooleanField()),
                 ('answer_given', models.CharField(blank=True, max_length=255)),
+                ('rating', models.PositiveSmallIntegerField(blank=True, null=True)),
                 ('answered_at', models.DateTimeField(auto_now_add=True)),
                 ('mode', models.CharField(choices=[('solo', 'Solo'), ('multiplayer', 'Multiplayer')], default='multiplayer', max_length=12)),
             ],

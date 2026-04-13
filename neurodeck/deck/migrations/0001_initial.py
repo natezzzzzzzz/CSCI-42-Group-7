@@ -42,6 +42,8 @@ class Migration(migrations.Migration):
                 ('CardID', models.AutoField(primary_key=True, serialize=False)),
                 ('Question', models.CharField(default='None', max_length=255)),
                 ('Answer', models.CharField(blank=True, default='None', max_length=255, null=True)),
+                ('QuestionImage', models.ImageField(blank=True, null=True, upload_to='card_images/')),
+                ('AnswerImage', models.ImageField(blank=True, null=True, upload_to='card_images/')),
                 ('FlashDateCreated', models.DateTimeField(auto_now_add=True)),
                 ('LastReviewed', models.DateTimeField(auto_now=True)),
                 ('DeckID', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='cards', to='deck.deck')),
