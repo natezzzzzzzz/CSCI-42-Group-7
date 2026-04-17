@@ -2865,3 +2865,19 @@ body:has(.db-layout) {
   white-space: nowrap;
   box-shadow: 0 4px 16px rgba(0,0,0,0.2);
 }
+
+.lp-toast-error { background: #b91c1c; }
+
+.csm-currency-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.855rem;
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  padding: 0.3rem 0.75rem;
+  border-radius: 99px;
+}
+
+.csm-lp-btn:disabled { opacity: 0.45; cursor: not-allowed; }

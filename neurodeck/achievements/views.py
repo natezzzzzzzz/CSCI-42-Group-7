@@ -117,6 +117,7 @@ def user_stats(request):
             "spaced_repetition_reviews": stats.spaced_repetition_reviews,
             "cards_mastered": stats.cards_mastered,
             "accuracy_percent": round(accuracy, 1),
+            "currency": stats.currency,
         }
     )
 

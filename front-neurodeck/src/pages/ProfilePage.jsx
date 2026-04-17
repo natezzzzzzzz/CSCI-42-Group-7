@@ -10,34 +10,34 @@ export default function ProfilePage() {
   const [avatar, setAvatar] = useState(null);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState("");
+  const [toast, setToast] = useState({ text: "", ok: true });
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const [avatarRes, itemsRes] = await Promise.all([fetchAvatar(), fetchMyCosmetics()]);
-        setAvatar(avatarRes);
-        setItems(itemsRes);
-      } catch (err) {
-        console.error("Profile load failed:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
-
-  const handleEquip = async (id) => {
+  const load = async () => {
     try {
-      await equipCosmetic(id);
       const [avatarRes, itemsRes] = await Promise.all([fetchAvatar(), fetchMyCosmetics()]);
       setAvatar(avatarRes);
       setItems(itemsRes);
-      setToast("Equipped!");
-      setTimeout(() => setToast(""), 2000);
+    } catch (err) {
+      console.error("Profile load failed:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const flash = (text, ok = true) => {
+    setToast({ text, ok });
+    setTimeout(() => setToast({ text: "", ok: true }), 2000);
+  };
+
+  const handleEquip = async (id) => {
+    try {
+      const res = await equipCosmetic(id);
+      await load();
+      flash(res.equipped ? "Equipped!" : "Unequipped!");
     } catch {
-      setToast("Equip failed.");
-      setTimeout(() => setToast(""), 2000);
+      flash("Equip failed.", false);
     }
   };
 
@@ -61,26 +61,40 @@ export default function ProfilePage() {
               />
             </div>
             <h2 className="pf-username">{user?.username ?? "Player"}</h2>
-            {avatar?.name && <p className="pf-avatar-name">Avatar: {avatar.name}</p>}
+            {avatar?.name && <p className="pf-avatar-name">Equipped: {avatar.name}</p>}
           </div>
 
           <div className="pf-inventory">
             <h3 className="pf-section-title">My Cosmetics</h3>
             {items.length === 0 ? (
-              <p className="db-empty">No cosmetics yet. <span className="auth-link" onClick={() => navigate("/shop")}>Visit the shop →</span></p>
+              <p className="db-empty">
+                No cosmetics yet.{" "}
+                <span className="auth-link" onClick={() => navigate("/shop")}>Visit the shop →</span>
+              </p>
             ) : (
               <div className="csm-lp-grid">
                 {items.map(c => (
-                  <div key={c.cosmeticID} className="csm-lp-card">
+                  <div
+                    key={c.cosmeticID}
+                    className={`csm-lp-card${c.equipped ? " csm-lp-equipped" : ""}`}
+                  >
+                    {c.equipped && <span className="csm-lp-badge">Equipped</span>}
                     <div className="csm-lp-img-wrap">
-                      <img src={`http://127.0.0.1:8000${c.image}`} alt={c.item_name} className="csm-lp-img" />
+                      <img
+                        src={`http://127.0.0.1:8000${c.image}`}
+                        alt={c.item_name}
+                        className="csm-lp-img"
+                      />
                     </div>
                     <div className="csm-lp-info">
                       <p className="csm-lp-name">{c.item_name}</p>
                     </div>
                     <div className="csm-lp-footer">
-                      <button className="csm-lp-btn csm-lp-btn-equip" onClick={() => handleEquip(c.cosmeticID)}>
-                        Equip
+                      <button
+                        className={`csm-lp-btn${c.equipped ? " csm-lp-btn-unequip" : " csm-lp-btn-equip"}`}
+                        onClick={() => handleEquip(c.cosmeticID)}
+                      >
+                        {c.equipped ? "Unequip" : "Equip"}
                       </button>
                     </div>
                   </div>
@@ -91,7 +105,9 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {toast && <div className="lp-toast">{toast}</div>}
+      {toast.text && (
+        <div className={`lp-toast${toast.ok ? "" : " lp-toast-error"}`}>{toast.text}</div>
+      )}
     </DashboardLayout>
   );
 }
