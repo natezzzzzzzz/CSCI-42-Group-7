@@ -1,9 +1,7 @@
 import React, { useState } from "react";
-import '../styles/index.css';
-import 'bulma/css/bulma.min.css';
 import { useNavigate } from "react-router-dom";
 
-function RegisterPage() {
+export default function RegisterPage() {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -14,34 +12,21 @@ function RegisterPage() {
 
   const handleRegister = async () => {
     setError("");
-
-    // Client-side password match check before hitting the server
-    if (password !== password2) {
-      setError("Passwords do not match.");
-      return;
-    }
-
+    if (password !== password2) { setError("Passwords do not match."); return; }
     setLoading(true);
-
     try {
       const res = await fetch("http://127.0.0.1:8000/api/register/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, email, password, password2 }),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
-        // DRF returns field-keyed errors e.g. { email: ["already exists"] }
-        const messages = Object.values(data).flat().join(" ");
-        setError(messages || "Registration failed. Please try again.");
+        setError(Object.values(data).flat().join(" ") || "Registration failed.");
         return;
       }
-
-      // Success — send to login so they authenticate properly
       navigate("/");
-    } catch (err) {
+    } catch {
       setError("Could not reach the server. Please try again.");
     } finally {
       setLoading(false);
@@ -49,100 +34,79 @@ function RegisterPage() {
   };
 
   return (
-    <section className="hero is-fullheight">
-      <div className="hero-body">
-        <div className="container">
-          <div className="columns is-centered">
-            <div className="column is-4">
-              <div className="box shadow-lg">
-
-                <h1 className="h4 has-text-centered mb-2">
-                  Create Account
-                </h1>
-
-                <p className="tagline has-text-centered mb-5">
-                  Join us today
-                </p>
-
-                {error && (
-                  <div className="notification is-danger is-light">
-                    {error}
-                  </div>
-                )}
-
-                <div className="field">
-                  <label className="label text-small">Username</label>
-                  <div className="control">
-                    <input
-                      className="input"
-                      type="text"
-                      placeholder="username"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="field">
-                  <label className="label text-small">Email</label>
-                  <div className="control">
-                    <input
-                      className="input"
-                      type="email"
-                      placeholder="you@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="field">
-                  <label className="label text-small">Password</label>
-                  <div className="control">
-                    <input
-                      className="input"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="field">
-                  <label className="label text-small">Confirm Password</label>
-                  <div className="control">
-                    <input
-                      className="input"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password2}
-                      onChange={(e) => setPassword2(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleRegister()}
-                    />
-                  </div>
-                </div>
-
-                <button
-                  className={`button is-primary is-fullwidth mt-4 ${loading ? "is-loading" : ""}`}
-                  onClick={handleRegister}
-                  disabled={loading}
-                >
-                  Register
-                </button>
-
-                <p className="has-text-centered mt-4 text-small">
-                  Already have an account?{" "}
-                  <a onClick={() => navigate("/")}>Login</a>
-                </p>
-
-              </div>
-            </div>
-          </div>
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-logo">
+          <svg width="32" height="32" viewBox="0 0 22 22" fill="none">
+            <polygon points="11,2 20,7 20,15 11,20 2,15 2,7" fill="#6366F1"/>
+            <polygon points="11,5 17,8.5 17,15.5 11,19 5,15.5 5,8.5" fill="white" opacity="0.4"/>
+          </svg>
+          <span className="auth-logo-text">NeuroDeck</span>
         </div>
+
+        <h1 className="auth-title">Create account</h1>
+        <p className="auth-subtitle">Join NeuroDeck and start learning</p>
+
+        {error && <div className="auth-error">{error}</div>}
+
+        <div className="auth-field">
+          <label className="auth-label">Username</label>
+          <input
+            className="auth-input"
+            type="text"
+            placeholder="username"
+            value={username}
+            onChange={e => setUsername(e.target.value)}
+          />
+        </div>
+
+        <div className="auth-field">
+          <label className="auth-label">Email</label>
+          <input
+            className="auth-input"
+            type="email"
+            placeholder="you@email.com"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+          />
+        </div>
+
+        <div className="auth-field">
+          <label className="auth-label">Password</label>
+          <input
+            className="auth-input"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+          />
+        </div>
+
+        <div className="auth-field">
+          <label className="auth-label">Confirm Password</label>
+          <input
+            className="auth-input"
+            type="password"
+            placeholder="••••••••"
+            value={password2}
+            onChange={e => setPassword2(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleRegister()}
+          />
+        </div>
+
+        <button
+          className="auth-btn"
+          onClick={handleRegister}
+          disabled={loading}
+        >
+          {loading ? <span className="auth-spinner" /> : "Create Account"}
+        </button>
+
+        <p className="auth-footer">
+          Already have an account?{" "}
+          <span className="auth-link" onClick={() => navigate("/")}>Sign in</span>
+        </p>
       </div>
-    </section>
+    </div>
   );
 }
-
-export default RegisterPage;
