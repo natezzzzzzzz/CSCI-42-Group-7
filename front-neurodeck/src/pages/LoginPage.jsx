@@ -1,10 +1,8 @@
 import React, { useState, useContext } from "react";
-import '../styles/index.css';
-import 'bulma/css/bulma.min.css';
 import { useNavigate } from "react-router-dom";
 import AuthContext from "../context/AuthContext";
 
-function LoginPage() {
+export default function LoginPage() {
   const navigate = useNavigate();
   const { loginUser } = useContext(AuthContext);
   const [email, setEmail] = useState("");
@@ -15,15 +13,11 @@ function LoginPage() {
   const handleLogin = async () => {
     setError("");
     setLoading(true);
-
     try {
       const success = await loginUser(email, password);
-      if (success) {
-        navigate("/main");
-      } else {
-        setError("Invalid email or password.");
-      }
-    } catch (err) {
+      if (success) navigate("/main");
+      else setError("Invalid email or password.");
+    } catch {
       setError("Could not reach the server. Please try again.");
     } finally {
       setLoading(false);
@@ -31,74 +25,58 @@ function LoginPage() {
   };
 
   return (
-    <section className="hero is-fullheight">
-      <div className="hero-body">
-        <div className="container">
-          <div className="columns is-centered">
-            <div className="column is-4">
-              <div className="box shadow-lg">
-
-                <h1 className="h4 has-text-centered mb-2">
-                  Welcome Back
-                </h1>
-
-                <p className="tagline has-text-centered mb-5">
-                  Login to continue
-                </p>
-
-                {error && (
-                  <div className="notification is-danger is-light">
-                    {error}
-                  </div>
-                )}
-
-                <div className="field">
-                  <label className="label text-small">Email</label>
-                  <div className="control">
-                    <input
-                      className="input"
-                      type="email"
-                      placeholder="you@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="field">
-                  <label className="label text-small">Password</label>
-                  <div className="control">
-                    <input
-                      className="input"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-                    />
-                  </div>
-                </div>
-
-                <button
-                  className={`button is-primary is-fullwidth mt-4 ${loading ? "is-loading" : ""}`}
-                  onClick={handleLogin}
-                  disabled={loading}
-                >
-                  Login
-                </button>
-
-                <p className="has-text-centered mt-4 text-small">
-                  Don't have an account?{" "}
-                  <a onClick={() => navigate("/register")}>Register</a>
-                </p>
-
-              </div>
-            </div>
-          </div>
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-logo">
+          <svg width="32" height="32" viewBox="0 0 22 22" fill="none">
+            <polygon points="11,2 20,7 20,15 11,20 2,15 2,7" fill="#6366F1"/>
+            <polygon points="11,5 17,8.5 17,15.5 11,19 5,15.5 5,8.5" fill="white" opacity="0.4"/>
+          </svg>
+          <span className="auth-logo-text">NeuroDeck</span>
         </div>
+
+        <h1 className="auth-title">Welcome back</h1>
+        <p className="auth-subtitle">Sign in to continue learning</p>
+
+        {error && <div className="auth-error">{error}</div>}
+
+        <div className="auth-field">
+          <label className="auth-label">Email</label>
+          <input
+            className="auth-input"
+            type="email"
+            placeholder="you@email.com"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleLogin()}
+          />
+        </div>
+
+        <div className="auth-field">
+          <label className="auth-label">Password</label>
+          <input
+            className="auth-input"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleLogin()}
+          />
+        </div>
+
+        <button
+          className="auth-btn"
+          onClick={handleLogin}
+          disabled={loading}
+        >
+          {loading ? <span className="auth-spinner" /> : "Sign In"}
+        </button>
+
+        <p className="auth-footer">
+          Don't have an account?{" "}
+          <span className="auth-link" onClick={() => navigate("/register")}>Create one</span>
+        </p>
       </div>
-    </section>
+    </div>
   );
 }
-
-export default LoginPage;

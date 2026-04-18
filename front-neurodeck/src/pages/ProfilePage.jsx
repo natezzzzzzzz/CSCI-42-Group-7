@@ -1,91 +1,113 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchAvatar, fetchMyCosmetics, equipCosmetic } from "../api/deckApi.js";
+import AuthContext from "../context/AuthContext";
+import DashboardLayout from "../components/DashboardLayout";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-
+  const { user } = useContext(AuthContext);
   const [avatar, setAvatar] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState({ text: "", ok: true });
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const [avatarRes, itemsRes] = await Promise.all([
-          fetchAvatar(),
-          fetchMyCosmetics(),
-        ]);
-
-        setAvatar(avatarRes);
-        setItems(itemsRes);
-      } catch (err) {
-        console.error("Profile load failed:", err);
-      } finally {
-        setLoading(false);
-      }
+  const load = async () => {
+    try {
+      const [avatarRes, itemsRes] = await Promise.all([fetchAvatar(), fetchMyCosmetics()]);
+      setAvatar(avatarRes);
+      setItems(itemsRes);
+    } catch (err) {
+      console.error("Profile load failed:", err);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
+
+  const flash = (text, ok = true) => {
+    setToast({ text, ok });
+    setTimeout(() => setToast({ text: "", ok: true }), 2000);
+  };
 
   const handleEquip = async (id) => {
     try {
-      await equipCosmetic(id);
-
-      const avatarRes = await fetchAvatar();
-      setAvatar(avatarRes);
-
-      const itemsRes = await fetchMyCosmetics();
-      setItems(itemsRes);
-
-    } catch (err) {
-      console.error("Equip failed:", err);
+      const res = await equipCosmetic(id);
+      await load();
+      flash(res.equipped ? "Equipped!" : "Unequipped!");
+    } catch {
+      flash("Equip failed.", false);
     }
-  };  
-
-  if (loading) return <div>Loading profile...</div>;
+  };
 
   return (
-    <div className="profile-page">
-
-      <div className="an-header">
-        <button onClick={() => navigate("/main")}>
-          Back
-        </button>
-        <h1>My Profile</h1>
+    <DashboardLayout>
+      <div className="db-content-header">
+        <h1 className="db-page-title">My Profile</h1>
+        <button className="db-new-btn" onClick={() => navigate("/shop")}>Visit Shop</button>
       </div>
 
-      {/* AVATAR */}
-      <div className="avatar-box">
-        <img
-          src={avatar?.url ? `http://127.0.0.1:8000${avatar.url}` : "/default.png"}
-          alt={avatar?.name || "avatar not found"}
-          className="avatar-img"
-        />
-      </div>
-
-      {/* COSMETIC INVENTORY */}
-      <div className="inventory">
-        <h2>My Cosmetics</h2>
-        <div className="csm-grid">
-          {items.map((c) => (
-            <div key={c.cosmeticID} className="csm-card">
-              <img src={`http://127.0.0.1:8000${c.image}`} alt={c.item_name} />
-              <p>{c.item_name}</p>
-
-              <button onClick={() => handleEquip(c.cosmeticID)}>
-                Equip
-              </button>
+      {loading ? (
+        <div className="lp-loading">Loading profile...</div>
+      ) : (
+        <div className="pf-layout">
+          <div className="pf-avatar-card">
+            <div className="pf-avatar-wrap">
+              <img
+                src={avatar?.url ? `http://127.0.0.1:8000${avatar.url}` : "/default.png"}
+                alt={avatar?.name || "Avatar"}
+                className="pf-avatar-img"
+              />
             </div>
-          ))}
+            <h2 className="pf-username">{user?.username ?? "Player"}</h2>
+            {avatar?.name && <p className="pf-avatar-name">Equipped: {avatar.name}</p>}
+          </div>
+
+          <div className="pf-inventory">
+            <h3 className="pf-section-title">My Cosmetics</h3>
+            {items.length === 0 ? (
+              <p className="db-empty">
+                No cosmetics yet.{" "}
+                <span className="auth-link" onClick={() => navigate("/shop")}>Visit the shop →</span>
+              </p>
+            ) : (
+              <div className="csm-lp-grid">
+                {items.map(c => (
+                  <div
+                    key={c.cosmeticID}
+                    className={`csm-lp-card${c.equipped ? " csm-lp-equipped" : ""}`}
+                  >
+                    {c.equipped && <span className="csm-lp-badge">Equipped</span>}
+                    <div className="csm-lp-img-wrap">
+                      <img
+                        src={`http://127.0.0.1:8000${c.image}`}
+                        alt={c.item_name}
+                        className="csm-lp-img"
+                      />
+                    </div>
+                    <div className="csm-lp-info">
+                      <p className="csm-lp-name">{c.item_name}</p>
+                    </div>
+                    <div className="csm-lp-footer">
+                      <button
+                        className={`csm-lp-btn${c.equipped ? " csm-lp-btn-unequip" : " csm-lp-btn-equip"}`}
+                        onClick={() => handleEquip(c.cosmeticID)}
+                      >
+                        {c.equipped ? "Unequip" : "Equip"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
+      )}
 
-        <button onClick={() => navigate("/shop")}>
-          Go to Shop
-        </button>
-      </div>
-
-    </div>
+      {toast.text && (
+        <div className={`lp-toast${toast.ok ? "" : " lp-toast-error"}`}>{toast.text}</div>
+      )}
+    </DashboardLayout>
   );
 }

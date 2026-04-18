@@ -3,13 +3,28 @@ from .models import MultiplayerRoom, RoomParticipant
 
 
 class RoomParticipantSerializer(serializers.ModelSerializer):
-    """Returns full participant info — username + score — needed by the frontend."""
+    """Returns full participant info — username + score + avatar — needed by the frontend."""
     username = serializers.CharField(source="User.username", read_only=True)
     user_id = serializers.IntegerField(source="User.pk", read_only=True)
+    avatar_url = serializers.SerializerMethodField()
+
+    def get_avatar_url(self, obj):
+        from cosmetics.models import Avatar, CosmeticItem
+        try:
+            avatar = Avatar.objects.select_related("equipped_cosmetic").get(user_id=obj.User_id)
+        except Avatar.DoesNotExist:
+            avatar = None
+        item = avatar.equipped_cosmetic if avatar else None
+        if not item:
+            try:
+                item = CosmeticItem.objects.get(cosmeticID="CSM_0008")
+            except CosmeticItem.DoesNotExist:
+                item = CosmeticItem.objects.first()
+        return item.image.url if item else None
 
     class Meta:
         model = RoomParticipant
-        fields = ["user_id", "username", "Score", "JoinedAt", "CurrentCardSubmitted", "IsActive", "LastAnswerCorrect"]
+        fields = ["user_id", "username", "avatar_url", "Score", "JoinedAt", "CurrentCardSubmitted", "IsActive", "LastAnswerCorrect"]
 
 
 class MultiplayerRoomSerializer(serializers.ModelSerializer):
