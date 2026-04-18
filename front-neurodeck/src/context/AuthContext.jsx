@@ -4,6 +4,9 @@ import { jwtDecode } from "jwt-decode";
 const AuthContext = createContext();
 export default AuthContext;
 
+const BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
+
 export const AuthProvider = ({ children }) => {
   const [authTokens, setAuthTokens] = useState(() => {
     const access = localStorage.getItem("access");
@@ -21,7 +24,7 @@ export const AuthProvider = ({ children }) => {
   });
 
   const loginUser = async (email, password) => {
-    const response = await fetch("http://127.0.0.1:8000/api/token/", {
+    const response = await fetch(`${BASE_URL}/api/token/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
