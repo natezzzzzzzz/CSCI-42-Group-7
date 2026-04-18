@@ -9,7 +9,9 @@ python manage.py migrate
 
 # create superuser
 if [ "$CREATE_SUPERUSER" ]; then
-  python manage.py shell << END#!/usr/bin/env bash
+  python manage.py shell << END
+
+#!/usr/bin/env bash
 # exit on error
 set -o errexit
 
@@ -39,3 +41,6 @@ else:
     print(f"Superuser '{username}' already exists. Skipping creation.")
 END
 fi
+
+
+
