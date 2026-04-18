@@ -1,26 +1,22 @@
 import { useNavigate } from 'react-router-dom';
 import MultiplayerRoom from '../components/MultiplayerRoom';
+import DashboardLayout from '../components/DashboardLayout';
 
 export default function MultiplayerPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="container mp-page">
-      <div className="mp-page-header">
-        <button
-          id="mp-back-btn"
-          className="mp-back-btn"
-          onClick={() => navigate('/main')}
-        >
-          ← Back to Menu
-        </button>
-        <div className="mp-page-title">
-          <h1 className="h4">Multiplayer</h1>
-          <p className="tagline mp-subtitle">Play flashcards in real-time with friends.</p>
+    <DashboardLayout>
+      <div className="db-content-header" style={{ marginBottom: "1.5rem" }}>
+        <div>
+          <h1 className="db-page-title">Multiplayer</h1>
+          <p style={{ fontSize: "0.855rem", color: "#888", margin: "0.2rem 0 0" }}>
+            Play flashcards in real-time with friends
+          </p>
         </div>
       </div>
 
-      <MultiplayerRoom onLeave={() => navigate('/main')} />
-    </div>
+      <MultiplayerRoom onLeave={() => navigate('/decks')} />
+    </DashboardLayout>
   );
 }

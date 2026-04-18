@@ -240,7 +240,7 @@ export const fetchAchievementStats = () => get(`${BASE_URL}/achievements/stats/`
 export const fetchActivityData = () => get(`${BASE_URL}/achievements/activity/`);
 
 export const fetchRecentUnlocks = (limit = 5) =>
-  get(`${BASE_URL}/achievements/?limit=${limit}`);
+  get(`${BASE_URL}/achievements/recent/?limit=${limit}`);
 
 export const fetchLeaderboard = () =>
   get(`${BASE_URL}/achievements/leaderboard/`);

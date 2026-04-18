@@ -172,6 +172,9 @@ class AchievementEngine:
                         user=user,
                         achievement=achievement,
                     )
+                    UserStats.objects.filter(user=user).update(
+                        currency=F("currency") + achievement.points
+                    )
                     newly_unlocked.append(ua)
                 except Exception:
                     continue
