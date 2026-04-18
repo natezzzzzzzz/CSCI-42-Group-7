@@ -273,6 +273,14 @@ export default function MultiplayerRoom({ onLeave }) {
 
   const clearError = () => setError('');
 
+  // Stop the polling interval when the game is finished (no state changes after that).
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }, []);
+
   // Show achievement toasts, skipping any that were already shown in this session.
   const showAchievements = useCallback((achievements) => {
     if (!achievements || achievements.length === 0) return;
@@ -349,10 +357,11 @@ export default function MultiplayerRoom({ onLeave }) {
           // against any per-answer achievements already shown.
           showAchievements(data.new_achievements);
           setPhase('finished');
+          stopPolling();
         }
       } catch { /* ignore transient network errors */ }
     }, 3000);
-  }, [handleFetchCard, showAchievements]);
+  }, [handleFetchCard, showAchievements, stopPolling]);
 
   // Host-only: advances the index on the server then immediately fetches the new card
   // for the host. Non-hosts will pick up the change on their next poll tick (≤3 s).
@@ -370,6 +379,7 @@ export default function MultiplayerRoom({ onLeave }) {
       if (result.game_over) {
         showAchievements(result.new_achievements);
         setPhase('finished');
+        stopPolling();
         return;
       }
       // Rapid-poll until all participants show CurrentCardSubmitted=True
@@ -392,7 +402,7 @@ export default function MultiplayerRoom({ onLeave }) {
     } finally {
       setIsLoading(false);
     }
-  }, [handleFetchCard]);
+  }, [handleFetchCard, stopPolling]);
 
   // Called when host clicks "Skip anyway" on the confirm dialog
   const handleConfirmAdvance = async () => {
@@ -405,6 +415,7 @@ export default function MultiplayerRoom({ onLeave }) {
       if (result.game_over) {
         showAchievements(result.new_achievements);
         setPhase('finished');
+        stopPolling();
         return;
       }
       if (checkSyncRef.current) clearTimeout(checkSyncRef.current);
@@ -485,6 +496,7 @@ export default function MultiplayerRoom({ onLeave }) {
       applyRoomUpdate(data);
       showAchievements(data.new_achievements);
       setPhase('finished');
+      stopPolling();
     } catch (e) {
       setError(e.message ?? 'Failed to end game.');
     }

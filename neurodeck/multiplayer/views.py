@@ -246,9 +246,10 @@ class LeaveRoomView(APIView):
     """
     POST /multiplayer/leave-room/
     Body: { room_code }
-    Marks the user as inactive in the room. If they are the host, migrates
-    host to the next earliest-joined participant. If no other active participants
-    remain, the room is marked finished.
+    Marks the user as inactive in the room. If the room is still active
+    (waiting/playing) and the leaving user is the host, migrates host to the
+    next earliest-joined participant. When all active participants have left,
+    the room is finalized and deleted from the database.
     """
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -264,7 +265,18 @@ class LeaveRoomView(APIView):
         participant.IsActive = False
         participant.save(update_fields=["IsActive"])
 
-        # If the leaving participant was the host, migrate host
+        # If the room is already finished, just check for cleanup — no host migration needed.
+        if room.Status == "finished":
+            active_count = RoomParticipant.objects.filter(Room=room, IsActive=True).count()
+            if active_count == 0:
+                _finalize_game(room)
+                try:
+                    room.delete()
+                except MultiplayerRoom.DoesNotExist:
+                    pass
+            return Response({"detail": "Left room successfully."})
+
+        # Room is still active (waiting/playing) — handle host migration
         if room.Host == request.user:
             next_host = (
                 RoomParticipant.objects
@@ -277,14 +289,18 @@ class LeaveRoomView(APIView):
                 room.Host = next_host.User
                 room.save(update_fields=["Host"])
             else:
-                # No other active participants — mark room finished
                 room.Status = "finished"
                 room.save(update_fields=["Status"])
-                # The leaving user was already marked inactive, so they won't
-                # appear in _finalize_game results. Remaining players (if any
-                # were marked inactive earlier) also won't. This is correct:
-                # nobody deserves completion achievements for an abandoned game.
                 _finalize_game(room)
+
+        # If all players have now left, finalize and delete the room
+        active_count = RoomParticipant.objects.filter(Room=room, IsActive=True).count()
+        if active_count == 0:
+            _finalize_game(room)
+            try:
+                room.delete()
+            except MultiplayerRoom.DoesNotExist:
+                pass
 
         return Response({"detail": "Left room successfully."})
 
