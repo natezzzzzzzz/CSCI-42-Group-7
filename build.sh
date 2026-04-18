@@ -8,6 +8,10 @@ cd neurodeck
 python manage.py collectstatic --noinput
 python manage.py migrate
 
+# populate db
+python manage.py seed
+python manage.py loaddata cosmetics.json 
+
 # create superuser
 if [ "$CREATE_SUPERUSER" ]; then
   python manage.py shell << END
