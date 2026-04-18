@@ -72,10 +72,10 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'neurodeck.urls'
-CORS_ALLOW_ALL_ORIGINS = True
-# CORS_ALLOWED_ORIGINS = [
-#     "https://your-frontend-url.vercel.app",
-# ]
+# CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = [
+    "https://csci-42-group-7.vercel.app/",
+]
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
