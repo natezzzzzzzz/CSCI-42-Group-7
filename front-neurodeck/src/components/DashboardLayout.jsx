@@ -72,15 +72,15 @@ export default function DashboardLayout({ children, rightPanel }) {
 
           {dashOpen && (
             <div className="db-nav-sub">
-              <div className="db-nav-sub-item" onClick={() => navigate("/analytics")}>
+              <div className="db-nav-sub-item" onClick={() => navigate("/analytics#trends")}>
                 <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><path d="M8 1l7 6.5-1.4 1.5L8 3.5 2.4 9 1 7.5z"/></svg>
                 <span>Trends</span>
               </div>
-              <div className="db-nav-sub-item" onClick={() => navigate("/analytics")}>
+              <div className="db-nav-sub-item" onClick={() => navigate("/analytics#analytics")}>
                 <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><path d="M1 3h14v2H1zm0 4h14v2H1zm0 4h14v2H1z"/></svg>
                 <span>Analytics</span>
               </div>
-              <div className="db-nav-sub-item" onClick={() => navigate("/analytics")}>
+              <div className="db-nav-sub-item" onClick={() => navigate("/analytics#historical")}>
                 <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><path d="M1 2h14v2H1zm0 4h14v2H1zm0 4h10v2H1z"/></svg>
                 <span>Historical</span>
               </div>

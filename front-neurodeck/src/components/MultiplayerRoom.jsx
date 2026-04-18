@@ -700,11 +700,16 @@ export default function MultiplayerRoom({ onLeave }) {
     const sorted = [...(room?.participants ?? [])].sort((a, b) => b.Score - a.Score);
     const winner = sorted[0];
     const isWinner = winner?.username === currentUsername;
+    const winnerAvatar = winner?.avatar_url ? getImageUrl(winner.avatar_url) : null;
 
     return (
       <div className="mp-finished">
         <div className="mp-winner-banner">
-          <div className="mp-winner-trophy">{isWinner ? '🏆' : '🎉'}</div>
+          {winnerAvatar ? (
+            <img src={winnerAvatar} alt={winner?.username} className="mp-winner-avatar" />
+          ) : (
+            <div className="mp-winner-trophy">{isWinner ? '🏆' : '🎉'}</div>
+          )}
           <h2 className="mp-winner-title">
             {isWinner ? 'You Win!' : `${winner?.username ?? '?'} Wins!`}
           </h2>

@@ -15,8 +15,12 @@ export default function AchievementsPage() {
   const [summary, setSummary] = useState({ total_points: 0, max_points: 0, unlocked_count: 0, total_count: 0 });
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
+    setLoading(true);
+    setError(null);
     async function load() {
       try {
         const [achData, statsData] = await Promise.all([
@@ -33,12 +37,13 @@ export default function AchievementsPage() {
         });
       } catch (e) {
         console.error("Failed to load achievements:", e);
+        setError(e.message || "Failed to load achievements.");
       } finally {
         setLoading(false);
       }
     }
     load();
-  }, []);
+  }, [retry]);
 
   const filtered = filter === "all"
     ? achievements
@@ -48,6 +53,12 @@ export default function AchievementsPage() {
     <DashboardLayout>
       {loading ? (
         <div className="lp-loading">Loading achievements...</div>
+      ) : error ? (
+        <div style={{ textAlign: "center", padding: "2rem", color: "#ef4444", background: "#fef2f2", borderRadius: "0.5rem" }}>
+          <p style={{ fontWeight: 600, marginBottom: "0.25rem" }}>Something went wrong</p>
+          <p style={{ fontSize: "0.85rem", color: "#888" }}>{error}</p>
+          <button className="db-new-btn" style={{ marginTop: "0.75rem" }} onClick={() => setRetry(r => r + 1)}>Retry</button>
+        </div>
       ) : (
         <>
           <div className="db-content-header" style={{ marginBottom: "1.25rem" }}>

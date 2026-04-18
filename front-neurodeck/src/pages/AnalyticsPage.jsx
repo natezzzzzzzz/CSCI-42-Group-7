@@ -6,8 +6,8 @@ import {
 import { fetchAchievementStats, fetchActivityData, fetchRecentUnlocks, fetchLeaderboard } from "../api/deckApi";
 import AuthContext from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
+import { useLocation } from "react-router-dom";
 
-const TIER_COLORS = { bronze: "#d97706", silver: "#94a3b8", gold: "#eab308", platinum: "#818cf8", Diamond: "#67e8f9" };
 const CATEGORY_COLORS = { general: "#6366f1", solo: "#22c55e", multiplayer: "#f59e0b" };
 const CATEGORY_LABELS = { general: "General", solo: "Solo", multiplayer: "Multiplayer" };
 const PLAYER_TIER_COLORS = { Bronze: "#d97706", Silver: "#94a3b8", Gold: "#eab308", Platinum: "#818cf8", Diamond: "#67e8f9" };
@@ -19,19 +19,57 @@ export default function AnalyticsPage() {
   const [recentAchievements, setRecentAchievements] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     async function load() {
-      await Promise.allSettled([
-        fetchAchievementStats().then(setStats).catch(console.error),
-        fetchActivityData().then(setActivity).catch(console.error),
-        fetchRecentUnlocks(10).then(d => setRecentAchievements(d.recent || [])).catch(console.error),
-        fetchLeaderboard().then(d => setLeaderboard(d.leaderboard || [])).catch(console.error),
+      const newErrors = {};
+
+      const [statsRes, activityRes, recentRes, leaderboardRes] = await Promise.allSettled([
+        fetchAchievementStats(),
+        fetchActivityData(),
+        fetchRecentUnlocks(10),
+        fetchLeaderboard(),
       ]);
+
+      if (statsRes.status === "fulfilled") {
+        setStats(statsRes.value);
+      } else {
+        newErrors.stats = statsRes.reason?.message || "Failed to load stats.";
+      }
+
+      if (activityRes.status === "fulfilled") {
+        setActivity(activityRes.value);
+      } else {
+        newErrors.activity = activityRes.reason?.message || "Failed to load activity data.";
+      }
+
+      if (recentRes.status === "fulfilled") {
+        setRecentAchievements(recentRes.value.recent || []);
+      } else {
+        newErrors.recent = recentRes.reason?.message || "Failed to load recent achievements.";
+      }
+
+      if (leaderboardRes.status === "fulfilled") {
+        setLeaderboard(leaderboardRes.value.leaderboard || []);
+      } else {
+        newErrors.leaderboard = leaderboardRes.reason?.message || "Failed to load leaderboard.";
+      }
+
+      setErrors(newErrors);
       setLoading(false);
     }
     load();
   }, []);
+
+  const location = useLocation();
+  useEffect(() => {
+    if (location.hash) {
+      const id = location.hash.replace("#", "");
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [location.hash]);
 
   if (loading) return (
     <DashboardLayout><div className="lp-loading">Loading analytics...</div></DashboardLayout>
@@ -69,8 +107,18 @@ export default function AnalyticsPage() {
     <DashboardLayout>
       <h1 className="db-page-title" style={{ marginBottom: "1.25rem" }}>Analytics</h1>
 
+      {Object.keys(errors).length > 0 && (
+        <div style={{ background: "#fef2f2", borderRadius: "0.5rem", padding: "1rem 1.25rem", marginBottom: "1rem", color: "#ef4444", fontSize: "0.85rem" }}>
+          <p style={{ fontWeight: 600, marginBottom: "0.25rem" }}>Some data failed to load</p>
+          {Object.values(errors).map((msg, i) => (
+            <p key={i} style={{ margin: 0, fontSize: "0.8rem", color: "#888" }}>{msg}</p>
+          ))}
+          <button className="db-new-btn" style={{ marginTop: "0.5rem" }} onClick={() => window.location.reload()}>Retry</button>
+        </div>
+      )}
+
       {stats && (
-        <div className="an-lp-metrics">
+        <div className="an-lp-metrics" id="trends">
           {[
             { label: "Cards Studied",   value: stats.total_cards_studied },
             { label: "Accuracy",        value: `${stats.accuracy_percent}%` },
@@ -108,7 +156,7 @@ export default function AnalyticsPage() {
       })()}
 
       {activity && (
-        <div className="an-lp-charts">
+        <div className="an-lp-charts" id="analytics">
           <div className="an-lp-chart-card">
             <h3 className="an-lp-chart-title">Study Activity (Last 30 Days)</h3>
             <ResponsiveContainer width="100%" height={220}>
@@ -221,7 +269,7 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      <div className="an-lp-chart-card">
+      <div className="an-lp-chart-card" id="historical">
         <h3 className="an-lp-chart-title">Global Leaderboard</h3>
         {leaderboard.length === 0 ? (
           <p style={{ color: "#aaa", fontSize: "0.85rem", textAlign: "center", padding: "1rem 0" }}>No players yet.</p>
