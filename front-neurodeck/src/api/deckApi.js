@@ -1,4 +1,6 @@
-const BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+// const BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+const BASE_URL = "https://csci-42-group-7.onrender.com" || "http://127.0.0.1:8000";
+console.log("Current API URL:", BASE_URL);
 
 function authHeaders() {
   const token = localStorage.getItem("access");
