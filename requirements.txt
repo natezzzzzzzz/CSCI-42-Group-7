@@ -19,7 +19,7 @@ Pillow
 # npm run dev
 
 # for deployment later
-# gunicorn
+gunicorn
 # python-dotenv
-# whitenoise
-# psycopg2-binary
+whitenoise
+psycopg2-binary
