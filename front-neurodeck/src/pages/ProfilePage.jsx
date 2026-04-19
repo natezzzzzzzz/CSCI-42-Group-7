@@ -12,6 +12,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState({ text: "", ok: true });
 
+  const BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
   const load = async () => {
     try {
       const [avatarRes, itemsRes] = await Promise.all([fetchAvatar(), fetchMyCosmetics()]);
@@ -55,7 +57,7 @@ export default function ProfilePage() {
           <div className="pf-avatar-card">
             <div className="pf-avatar-wrap">
               <img
-                src={avatar?.url ? `http://127.0.0.1:8000${avatar.url}` : "/default.png"}
+                src={avatar?.url ? `${BASE_URL}${avatar.url}` : "/default.png"}
                 alt={avatar?.name || "Avatar"}
                 className="pf-avatar-img"
               />
@@ -81,7 +83,7 @@ export default function ProfilePage() {
                     {c.equipped && <span className="csm-lp-badge">Equipped</span>}
                     <div className="csm-lp-img-wrap">
                       <img
-                        src={`http://127.0.0.1:8000${c.image}`}
+                        src={`${BASE_URL}${c.image}`}
                         alt={c.item_name}
                         className="csm-lp-img"
                       />

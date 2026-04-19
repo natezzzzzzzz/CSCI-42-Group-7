@@ -17,6 +17,8 @@ export default function CosmeticsPage() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState({ text: "", ok: true });
 
+  const BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
   useEffect(() => {
     fetchCosmeticShop()
       .then(res => {
@@ -87,7 +89,7 @@ export default function CosmeticsPage() {
                 {item.equipped && <span className="csm-lp-badge">Equipped</span>}
                 <div className="csm-lp-img-wrap">
                   <img
-                    src={`http://127.0.0.1:8000${item.Image}`}
+                    src={`${BASE_URL}${item.Image}`}
                     alt={item.ItemName}
                     className="csm-lp-img"
                   />
