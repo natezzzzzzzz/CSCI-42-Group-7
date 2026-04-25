@@ -1427,21 +1427,23 @@ body:has(.db-layout) {
 }
 
 .db-new-btn {
-  background: #fff;
-  border: 1px solid #d0d0d0;
-  color: #333;
-  padding: 0.4rem 0.85rem;
+  background: #6366f1;
+  border: 1px solid #6366f1;
+  color: #fff;
+  padding: 0.4rem 0.95rem;
   border-radius: 0.35rem;
   font-size: 0.825rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   font-family: var(--font-family-base);
-  transition: background 0.12s, border-color 0.12s;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+  box-shadow: 0 1px 3px rgba(99,102,241,0.35);
 }
 
 .db-new-btn:hover {
-  background: #f5f5f5;
-  border-color: #bbb;
+  background: #4f46e5;
+  border-color: #4f46e5;
+  box-shadow: 0 2px 6px rgba(99,102,241,0.4);
 }
 
 /* ── Create form wrapper ── */
@@ -1479,18 +1481,350 @@ body:has(.db-layout) {
 
 /* ── Deck list ── */
 
-.db-deck-list { display: flex; flex-direction: column; }
+.db-deck-list { display: flex; flex-direction: column; gap: 0.25rem; }
+
+.db-deck-entry {
+  border-radius: 0.5rem;
+  transition: background 0.12s;
+}
+
+.db-deck-entry:hover { background: #f7f7f9; }
+
+.db-deck-entry--open {
+  background: #f7f7f9;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
 
 .db-deck-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.8rem 0;
-  border-bottom: 1px solid #f2f2f2;
+  padding: 0.75rem 0.85rem;
   gap: 0.75rem;
+  cursor: default;
 }
 
-.db-deck-item:last-child { border-bottom: none; }
+/* ── Deck name row with badge ── */
+
+.db-deck-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.db-deck-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #6366f1;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+/* ── Cards toggle button ── */
+
+.db-cards-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  color: #444;
+  font-size: 0.775rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.28rem 0.7rem;
+  border-radius: 0.3rem;
+  line-height: 1.4;
+  transition: background 0.12s, border-color 0.12s, color 0.12s, box-shadow 0.12s;
+  font-family: var(--font-family-base);
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.db-cards-btn:hover {
+  background: #f5f5f5;
+  border-color: #a5b4fc;
+  color: #4f46e5;
+}
+
+.db-cards-btn--active {
+  background: #eef2ff;
+  border-color: #a5b4fc;
+  color: #4f46e5;
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.1);
+}
+
+/* ── Inline card editor panel ── */
+
+.db-card-editor-panel {
+  margin: 0 0.85rem 0.85rem;
+  background: #fff;
+  border: 1px solid #e4e4e7;
+  border-left: 3px solid #6366f1;
+  border-radius: 0 0.5rem 0.5rem 0;
+  overflow: hidden;
+}
+
+.db-card-editor-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.8rem 1.1rem 0.65rem;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafe;
+}
+
+.db-card-editor-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #111;
+  letter-spacing: -0.01em;
+}
+
+.db-card-editor-subtitle {
+  font-size: 0.775rem;
+  color: #999;
+}
+
+.db-card-editor-body {
+  padding: 1rem 1.1rem;
+}
+
+/* ── Form elements inside panel ── */
+
+.db-card-editor-panel .field { margin-bottom: 0.6rem; }
+
+.db-card-editor-panel .input {
+  width: 100%;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 0.35rem;
+  font-size: 0.855rem;
+  font-family: var(--font-family-base);
+  background: #fafafa;
+  color: #111;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  box-sizing: border-box;
+}
+
+.db-card-editor-panel .input:focus {
+  background: #fff;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.12);
+}
+
+.db-card-editor-panel .mp-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #888;
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ── Buttons inside panel ── */
+
+.db-card-editor-panel .button {
+  padding: 0.35rem 0.85rem;
+  border-radius: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  font-family: var(--font-family-base);
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s, transform 0.1s;
+  line-height: 1.4;
+}
+
+.db-card-editor-panel .button:active { transform: scale(0.97); }
+
+.db-card-editor-panel .button.is-primary {
+  background: #6366f1;
+  color: #fff;
+  border-color: #6366f1;
+  box-shadow: 0 1px 3px rgba(99,102,241,0.35);
+}
+
+.db-card-editor-panel .button.is-primary:hover {
+  background: #4f46e5;
+  border-color: #4f46e5;
+  box-shadow: 0 2px 6px rgba(99,102,241,0.4);
+}
+
+.db-card-editor-panel .button.is-success {
+  background: #10b981;
+  color: #fff;
+  border-color: #10b981;
+  box-shadow: 0 1px 3px rgba(16,185,129,0.3);
+}
+
+.db-card-editor-panel .button.is-success:hover { background: #059669; border-color: #059669; }
+
+.db-card-editor-panel .button.is-danger {
+  background: #fff;
+  color: #ef4444;
+  border-color: #fca5a5;
+}
+
+.db-card-editor-panel .button.is-danger:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+}
+
+.db-card-editor-panel .button:not(.is-primary):not(.is-success):not(.is-danger) {
+  background: #fff;
+  color: #555;
+  border-color: #ddd;
+}
+
+.db-card-editor-panel .button:not(.is-primary):not(.is-success):not(.is-danger):hover {
+  background: #f5f5f5;
+  border-color: #bbb;
+}
+
+.db-card-editor-panel .buttons {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ── Existing card boxes ── */
+
+.db-card-editor-panel .box {
+  background: #fafafa;
+  border: 1px solid #ebebeb;
+  border-radius: 0.45rem;
+  padding: 0.8rem 1rem;
+  margin-bottom: 0.5rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.db-card-editor-panel .box:hover {
+  border-color: #d0d0d0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.db-card-editor-panel .text-small {
+  font-size: 0.845rem;
+  color: #333;
+  margin: 0 0 0.25rem;
+  line-height: 1.5;
+}
+
+.db-card-editor-panel .text-small strong {
+  color: #6366f1;
+  font-weight: 600;
+}
+
+.db-card-editor-panel .help.is-danger {
+  color: #ef4444;
+  font-size: 0.775rem;
+  margin: 0.25rem 0 0;
+}
+
+/* ── Add card form separator ── */
+
+.db-card-editor-panel form {
+  background: #f5f6ff;
+  border: 1px dashed #c7d2fe;
+  border-radius: 0.45rem;
+  padding: 0.9rem 1rem;
+  margin-bottom: 1rem;
+}
+
+/* ── Inline deck edit form ── */
+
+.db-deck-edit-form {
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.db-deck-edit-fields {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.db-deck-edit-input {
+  flex: 1;
+  min-width: 140px;
+  padding: 0.42rem 0.7rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 0.35rem;
+  font-size: 0.855rem;
+  font-family: var(--font-family-base);
+  background: #fafafa;
+  color: #111;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+}
+
+.db-deck-edit-input:first-child { flex: 1.5; min-width: 180px; font-weight: 600; }
+
+.db-deck-edit-input:focus {
+  background: #fff;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.12);
+}
+
+.db-deck-edit-error {
+  font-size: 0.775rem;
+  color: #ef4444;
+  margin: 0;
+}
+
+.db-deck-edit-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.db-edit-save-btn {
+  padding: 0.32rem 0.9rem;
+  background: #6366f1;
+  color: #fff;
+  border: 1px solid #6366f1;
+  border-radius: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-family-base);
+  transition: background 0.12s;
+}
+.db-edit-save-btn:hover:not(:disabled) { background: #4f46e5; }
+.db-edit-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.db-edit-cancel-btn {
+  padding: 0.32rem 0.75rem;
+  background: #fff;
+  color: #555;
+  border: 1px solid #ddd;
+  border-radius: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: var(--font-family-base);
+  transition: background 0.12s;
+}
+.db-edit-cancel-btn:hover { background: #f5f5f5; }
+
+/* ── Deck description ── */
+
+.db-deck-desc {
+  font-size: 0.775rem;
+  color: #888;
+  margin: 0.1rem 0 0;
+}
 
 .db-deck-info { flex: 1; min-width: 0; }
 
@@ -1498,13 +1832,13 @@ body:has(.db-layout) {
   font-size: 0.9rem;
   font-weight: 600;
   color: #111;
-  margin: 0 0 0.18rem;
+  margin: 0;
 }
 
 .db-deck-date {
-  font-size: 0.775rem;
-  color: #999;
-  margin: 0;
+  font-size: 0.75rem;
+  color: #aaa;
+  margin: 0.15rem 0 0;
 }
 
 .db-deck-actions {
@@ -1535,20 +1869,24 @@ body:has(.db-layout) {
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  background: none;
-  border: none;
-  color: #555;
-  font-size: 0.855rem;
-  font-weight: 500;
+  background: #f0f0f0;
+  border: 1px solid #e0e0e0;
+  color: #333;
+  font-size: 0.8rem;
+  font-weight: 600;
   cursor: pointer;
-  padding: 0.3rem 0.45rem;
-  border-radius: 0.25rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 0.3rem;
   white-space: nowrap;
-  transition: color 0.12s, background 0.12s;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
   font-family: var(--font-family-base);
 }
 
-.db-review-btn:hover { background: #f5f5f5; color: #111; }
+.db-review-btn:hover {
+  background: #111;
+  border-color: #111;
+  color: #fff;
+}
 
 .db-empty {
   color: #aaa;
