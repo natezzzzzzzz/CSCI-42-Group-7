@@ -12,6 +12,7 @@ from .models import Achievement, AnswerRecord, GameResult, UserAchievement, User
 
 
 def _compute_progress(achievement, stats, is_unlocked):
+
     """Map criteria to a stat field for progress bars."""
     mapping = {
         "cards_studied": "total_cards_studied",
@@ -36,7 +37,8 @@ def _compute_progress(achievement, stats, is_unlocked):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def list_achievements(request):
-    """GET /achievements/ — all achievements with user unlock status and progress."""
+
+    """List all achievements with user unlock status and progress."""
     stats, _ = UserStats.objects.get_or_create(user=request.user)
 
     all_achievements = Achievement.objects.all()
@@ -92,7 +94,8 @@ def list_achievements(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def user_stats(request):
-    """GET /achievements/stats/ — user's aggregated statistics."""
+
+    """Get the user's aggregated statistics."""
     stats, _ = UserStats.objects.get_or_create(user=request.user)
     accuracy = (
         (stats.total_correct_answers / stats.total_answers * 100)
@@ -125,7 +128,8 @@ def user_stats(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def recent_unlocks(request):
-    """GET /achievements/recent/?limit=5 — recent unlocks for notifications."""
+    
+    """Get recent unlocks for notifications."""
     limit = int(request.query_params.get("limit", 5))
     recent = (
         UserAchievement.objects.filter(user=request.user)
@@ -151,7 +155,8 @@ def recent_unlocks(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def activity_data(request):
-    """GET /achievements/activity/ — daily activity and performance data for charts."""
+    
+    """ Get daily activity and performance data for charts."""
     user = request.user
     stats, _ = UserStats.objects.get_or_create(user=user)
 
@@ -164,7 +169,7 @@ def activity_data(request):
         user=user, played_at__date__gte=start_date
     )
 
-    # Build date-indexed dicts — multiplayer correct/wrong and solo rating breakdown
+    """ Aggregate daily counts for different answer outcomes and games played. """
     daily_correct = {}
     daily_wrong = {}
     daily_again = {}
@@ -208,7 +213,7 @@ def activity_data(request):
             }
         )
 
-    # ── Category breakdown ──
+    # ── Category breakdown ──────────────
     user_unlock_ids = set(
         UserAchievement.objects.filter(user=user).values_list(
             "achievement_id", flat=True
@@ -224,7 +229,7 @@ def activity_data(request):
         if a.id in user_unlock_ids:
             categories[cat]["unlocked"] += 1
 
-    # ── Tier breakdown ──
+    # ── Tier breakdown ──────────────
     tiers = {}
     for a in all_achievements:
         t = a.tier
@@ -234,7 +239,7 @@ def activity_data(request):
         if a.id in user_unlock_ids:
             tiers[t]["unlocked"] += 1
 
-    # ── Recent game results ──
+    # ── Recent game results ──────────────
     recent_games = GameResult.objects.filter(user=user)[:10]
     games_list = [
         {
@@ -261,7 +266,8 @@ def activity_data(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def leaderboard(request):
-    """GET /achievements/leaderboard/ — global ranking by correct answers with player tier."""
+    
+    """Get global ranking by correct answers with player tier."""
     from django.db import models
 
     max_points = Achievement.objects.aggregate(total=Sum("points"))["total"] or 0

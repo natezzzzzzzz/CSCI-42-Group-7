@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { fetchDeckStudyStats } from "../api/deckApi";
 
+// This component allows the user to start a study session with options to include cards due in future days. 
 export default function CustomStudyModal({ deckId, deckName, onClose }) {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);

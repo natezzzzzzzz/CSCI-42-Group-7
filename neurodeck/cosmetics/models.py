@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import models
 
 
+""" This function generates the next sequential cosmetic ID (e.g. CSM_0005). """
 def generate_cosmetic_id():
     from .models import CosmeticItem
 
@@ -14,7 +15,7 @@ def generate_cosmetic_id():
 
     return f"CSM_{num:04d}"
 
-
+""" These models form the foundation for implementing the cosmetics system, allowing users to purchase and equip cosmetic items that enhance their profile and avatar. """
 class CosmeticItem(models.Model):
     cosmeticID = models.CharField(primary_key=True, max_length=10, editable=False)
     item_name = models.CharField(max_length=255, unique=True)
@@ -45,7 +46,7 @@ class CosmeticItem(models.Model):
     def __str__(self):
         return self.item_name
 
-
+""" The UserCosmetic model represents the relationship between users and the cosmetic items they own, allowing us to track which cosmetics each user has purchased and when. """
 class UserCosmetic(models.Model):
     userID = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -67,7 +68,7 @@ class UserCosmetic(models.Model):
     def __str__(self):
         return f"{self.userID.username} owns {self.cosmeticID.item_name}"
         
-
+""" This allows users to customize their profile with the cosmetics they have purchased. """
 class Avatar(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,

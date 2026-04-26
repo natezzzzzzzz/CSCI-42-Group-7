@@ -5,11 +5,7 @@ from django.dispatch import receiver
 
 
 class CustomUserManager(BaseUserManager):
-    """
-    Custom manager required because USERNAME_FIELD = 'email'.
-    Django's default UserManager expects 'username' as the first arg,
-    which breaks create_user() and create_superuser() on this model.
-    """
+    """ The custom user manager was made to handle user creation with email as the unique identifier instead of username. """
 
     def create_user(self, email, username, password=None, **extra_fields):
         if not email:
@@ -34,7 +30,7 @@ class CustomUserManager(BaseUserManager):
 
         return self.create_user(email, username, password, **extra_fields)
 
-
+""" This module defines the custom User model and Profile model for the API app, along with signal handlers to automatically create related Profile and UserStats instances when a new User is created. """
 class User(AbstractUser):
     username = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
@@ -59,6 +55,7 @@ class User(AbstractUser):
         return self.email
 
 
+""" The Profile model extends the User model with additional fields like full name, bio, profile image, and verification status. A signal handler ensures that a Profile instance is created for each new User. """
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     full_name = models.CharField(max_length=1000, blank=True, default='')
@@ -70,7 +67,9 @@ class Profile(models.Model):
         return self.user.username
 
 
+""" Signal handler to create a Profile and UserStats instance whenever a new User is created. """
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
+    # Auto-create a Profile row for every new User.
     if created:
         Profile.objects.get_or_create(user=instance)

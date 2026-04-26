@@ -7,9 +7,11 @@ from .serializers import CosmeticItemSerializer, UserCosmeticSerializer
 from achievements.models import UserStats
 
 
+""" This module defines API views for the Cosmetics feature, allowing users to view the shop, purchase items, equip cosmetics, and view their owned cosmetics and avatar. """
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def list_shop(request):
+    # GET /cosmetics/shop/ — all shop items with ownership and equipped status.
     items = CosmeticItem.objects.all()
     stats, _ = UserStats.objects.get_or_create(user=request.user)
 
@@ -37,10 +39,11 @@ def list_shop(request):
 
     return Response({"items": data, "currency": stats.currency})
 
-
+""" The purchase view handles buying a cosmetic item, checking for ownership and sufficient currency, and then deducting the cost and granting the item to the user. """
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def purchase(request, cosmetic_id):
+    # POST /cosmetics/shop/<cosmetic_id>/purchase/ — buy an item using currency.
     try:
         item = CosmeticItem.objects.get(cosmeticID=cosmetic_id)
     except CosmeticItem.DoesNotExist:
@@ -63,10 +66,11 @@ def purchase(request, cosmetic_id):
         "currency": stats.currency,
     })
 
-
+""" The equip view allows users to toggle whether an owned cosmetic item is currently equipped on their avatar, updating the Avatar model accordingly. """
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def equip(request, cosmetic_id):
+    # POST /cosmetics/shop/<cosmetic_id>/equip/ — toggle equip on an owned item.
     try:
         item = CosmeticItem.objects.get(cosmeticID=cosmetic_id)
     except CosmeticItem.DoesNotExist:
@@ -86,10 +90,11 @@ def equip(request, cosmetic_id):
     profile.save()
     return Response({"equipped": True})
 
-
+""" This view returns a list of all cosmetics the user owns, along with an "equipped" flag to indicate which one is currently equipped on their avatar. """
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def my_cosmetics(request):
+    # GET /cosmetics/mine/ — list all cosmetics the user owns, with equipped flag.
     owned = UserCosmetic.objects.filter(
         userID=request.user
     ).select_related("cosmeticID")
@@ -104,7 +109,7 @@ def my_cosmetics(request):
 
     return Response(data)
 
-
+""" This view returns the currently equipped cosmetic item for the user's avatar, defaulting to a predefined item if none is equipped. """
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_avatar(request):

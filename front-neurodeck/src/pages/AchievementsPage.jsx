@@ -9,6 +9,8 @@ const TIER_COLORS = {
   platinum: { border: "#818cf8", bg: "#eef2ff", text: "#4f46e5" },
 };
 
+// This page displays the user's achievements, including a summary of total points and unlocked achievements, as well as detailed stats and a filterable grid of individual achievements.
+// It fetches the achievement data from the API and handles loading and error states gracefully.
 export default function AchievementsPage() {
   const [achievements, setAchievements] = useState([]);
   const [stats, setStats] = useState(null);

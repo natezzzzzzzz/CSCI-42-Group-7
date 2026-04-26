@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { fetchDeckSettings, updateDeckSettings } from "../api/deckApi";
 
+
+// This component provides a modal interface for viewing and updating the study settings of a deck, such as the maximum number of new, learning, and review cards per day.
 export default function DeckSettingsModal({ deckId, onClose }) {
   const [maxNew, setMaxNew] = useState(20);
   const [maxLearning, setMaxLearning] = useState(20);

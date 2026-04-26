@@ -4,16 +4,18 @@ from django.db import transaction
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
 
-
+""" This handles serialization and validation for user registration and JWT token generation, including injecting profile fields into the JWT payload frontend. """
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'username', 'email')
 
-
+""" Custom serializer for JWT token generation that includes additional user profile information in the token payload. """
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
+        # Inject profile fields into the JWT payload so the frontend
+        # can read them from the token without a separate profile request.
         token = super().get_token(user)
 
         profile, _ = Profile.objects.get_or_create(user=user)
@@ -27,7 +29,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         return token
 
-
+""" Serializer for user registration that validates password confirmation and creates a new User instance. """
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True, required=True, validators=[validate_password])

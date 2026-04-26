@@ -1,6 +1,7 @@
 import React from "react";
 import DeckItem from "./DeckItem";
 
+// This component renders a list of DeckItem components based on the provided decks array.
 export default function DeckList({ decks, searchQuery, filterCategory, onUpdate, onDelete }) {
   const filteredDecks = decks.filter(deck => {
     const name = deck.DeckName?.toLowerCase() ?? "";

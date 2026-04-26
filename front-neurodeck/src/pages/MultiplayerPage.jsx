@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import MultiplayerRoom from '../components/MultiplayerRoom';
 import DashboardLayout from '../components/DashboardLayout';
 
+// This page displays the multiplayer room where users can play flashcards in real-time with friends. It is wrapped in the main dashboard layout and includes a header with the page title and description. 
 export default function MultiplayerPage() {
   const navigate = useNavigate();
 

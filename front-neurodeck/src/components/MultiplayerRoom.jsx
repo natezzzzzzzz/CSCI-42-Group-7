@@ -15,7 +15,7 @@ import {
 } from '../api/deckApi';
 import { useAchievementNotify } from './AchievementToast';
 
-
+// This component manages the multiplayer room lifecycle, including creating/joining a room, starting/ending the game, advancing through flashcards, and displaying the scoreboard and real-time feedback.
 const getUsernameFromToken = () => {
   try {
     const token = localStorage.getItem('access');
@@ -29,7 +29,7 @@ const getUsernameFromToken = () => {
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
-
+// This component displays the current participants and their scores, highlighting the current user and optionally showing submission status for the current card.
 function Scoreboard({ participants, currentUsername, showSubmissionStatus }) {
   const sorted = [...participants].sort((a, b) => b.Score - a.Score);
   return (
@@ -73,18 +73,19 @@ function ProgressBar({ current, total }) {
   );
 }
 
+ 
 function ScorePop({ show }) {
   return show ? <div className="mp-score-pop">+1</div> : null;
 }
 
-// onNext is null for non-hosts — all host-only buttons are guarded with {onNext && ...}
+// This component manages the flashcard display, answer input, feedback, and host controls for advancing/skipping cards. 
 function FlashcardPanel({ card, onSubmit, onNext, isLoading, currentRound, totalRounds, confirmPayload, onConfirm }) {
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState(null);
   const [showPop, setShowPop] = useState(false);
   const inputRef = useRef(null);
 
-  // Reset state whenever the card changes
+  
   useEffect(() => {
     setAnswer('');
     setFeedback(null);
@@ -227,13 +228,13 @@ function FlashcardPanel({ card, onSubmit, onNext, isLoading, currentRound, total
   );
 }
 
-
+// This component calls the multiplayer room functions to manage the entire game flow, including room creation/joining, game start/end, card advancement, and answer submission. 
 export default function MultiplayerRoom({ onLeave }) {
   const navigate = useNavigate();
   const currentUsername = getUsernameFromToken();
   const notifyAchievement = useAchievementNotify();
 
-  const [phase, setPhase] = useState('entry');  // entry | lobby | playing | finished
+  const [phase, setPhase] = useState('entry');  
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -248,13 +249,12 @@ export default function MultiplayerRoom({ onLeave }) {
   const [currentRound, setCurrentRound] = useState(0);
   const [streak, setStreak] = useState(0);
   const [syncWarning, setSyncWarning] = useState(null);
-  const [confirmPayload, setConfirmPayload] = useState(null); // { warning, unsynced_count } when host must confirm
+  const [confirmPayload, setConfirmPayload] = useState(null); 
 
   const pollRef = useRef(null);
   const roomRef = useRef(null);
   const checkSyncRef = useRef(null);
-  // Track achievement names already shown as toasts, so per-answer achievements
-  // aren't re-shown when the game-end polling response includes them again.
+
   const shownAchievementNames = useRef(new Set());
 
   useEffect(() => { roomRef.current = room; }, [room]);
@@ -273,7 +273,7 @@ export default function MultiplayerRoom({ onLeave }) {
 
   const clearError = () => setError('');
 
-  // Stop the polling interval when the game is finished (no state changes after that).
+  // It stops the polling interval that fetches room details every few seconds. 
   const stopPolling = useCallback(() => {
     if (pollRef.current) {
       clearInterval(pollRef.current);
@@ -281,7 +281,7 @@ export default function MultiplayerRoom({ onLeave }) {
     }
   }, []);
 
-  // Show achievement toasts, skipping any that were already shown in this session.
+  // It shows the achievement unlock notifications as toasts, ensuring that each achievement is only shown once per game. 
   const showAchievements = useCallback((achievements) => {
     if (!achievements || achievements.length === 0) return;
     achievements.forEach((a) => {
@@ -292,8 +292,7 @@ export default function MultiplayerRoom({ onLeave }) {
     });
   }, [notifyAchievement]);
 
-  // FIX: No longer depends on `phase` — uses functional setState to avoid stale closures
-  // inside the polling interval.
+  // This part applies the room data received from the server to update the local state, including transitioning between lobby, playing, and finished phases based on the room status.
   const applyRoomUpdate = useCallback((data) => {
     setRoom(data);
     roomRef.current = data;
@@ -304,8 +303,7 @@ export default function MultiplayerRoom({ onLeave }) {
     });
   }, []);
 
-  // Safe for all players — reads the current card WITHOUT advancing the index.
-  // The server's GetFlashcardView is read-only; only NextCardView (host POST) mutates the index.
+  // This function fetches the current flashcard for the room and updates the state accordingly.
   const handleFetchCard = useCallback(async (roomCode) => {
     const code = roomCode ?? roomRef.current?.RoomCode;
     if (!code) return;
@@ -323,15 +321,10 @@ export default function MultiplayerRoom({ onLeave }) {
     }
   }, []);
 
-  // Polls room detail every 3 seconds.
-  // When CurrentCardIndex changes (host advanced via NextCardView), all clients re-fetch
-  // the card at the new index. This is the ONLY trigger for non-hosts to advance.
+  // This function starts the polling interval to fetch room details every few seconds, allowing the UI to stay updated with the latest game state and transition between phases as needed.
   const startPolling = useCallback((roomCode) => {
     if (pollRef.current) clearInterval(pollRef.current);
 
-    // Seed with -1 so that index=0 (game just started) is always treated as "changed"
-    // and both host and non-hosts auto-load the first card as soon as polling sees
-    // Status = 'playing'.
     let lastCardIndex = -1;
 
     pollRef.current = setInterval(async () => {
@@ -341,10 +334,10 @@ export default function MultiplayerRoom({ onLeave }) {
         roomRef.current = data;
 
         if (data.Status === 'playing') {
-          // Transition lobby → playing for non-hosts when the host starts the game
+    
           setPhase((prev) => prev === 'lobby' ? 'playing' : prev);
 
-          // Only fetch the card when the index has actually changed (host called /next/)
+          // Only fetch the card when the index has actually changed.
           if (data.CurrentCardIndex !== lastCardIndex) {
             lastCardIndex = data.CurrentCardIndex;
             handleFetchCard(roomCode);
@@ -352,9 +345,6 @@ export default function MultiplayerRoom({ onLeave }) {
         }
 
         if (data.Status === 'finished') {
-          // Show game-end achievement toasts for non-hosts who detect
-          // the game ending via polling. showAchievements deduplicates
-          // against any per-answer achievements already shown.
           showAchievements(data.new_achievements);
           setPhase('finished');
           stopPolling();
@@ -363,8 +353,7 @@ export default function MultiplayerRoom({ onLeave }) {
     }, 3000);
   }, [handleFetchCard, showAchievements, stopPolling]);
 
-  // Host-only: advances the index on the server then immediately fetches the new card
-  // for the host. Non-hosts will pick up the change on their next poll tick (≤3 s).
+  // This allows the host to advance to the next card, with logic to handle blocking conditions and optionally force advancing if the host chooses to skip anyway.
   const handleNextCard = useCallback(async () => {
     const code = roomRef.current?.RoomCode;
     if (!code) return;
@@ -404,7 +393,7 @@ export default function MultiplayerRoom({ onLeave }) {
     }
   }, [handleFetchCard, stopPolling]);
 
-  // Called when host clicks "Skip anyway" on the confirm dialog
+  // This is called when host clicks "Skip anyway" on the confirm dialog
   const handleConfirmAdvance = async () => {
     const code = roomRef.current?.RoomCode;
     if (!code) return;
@@ -439,6 +428,7 @@ export default function MultiplayerRoom({ onLeave }) {
     }
   };
 
+  // This function allows the host to select a deck that will bne used in the multiplayer room. 
   const handleCreateRoom = async () => {
     if (!selectedDeckId) return setError('Please select a deck.');
     clearError();
@@ -455,6 +445,7 @@ export default function MultiplayerRoom({ onLeave }) {
     }
   };
 
+  // This function allows a player to join an existing multiplayer room.
   const handleJoinRoom = async () => {
     const code = joinCodeInput.trim().toUpperCase();
     if (!code) return setError('Please enter a room code.');
@@ -472,6 +463,7 @@ export default function MultiplayerRoom({ onLeave }) {
     }
   };
 
+  // This function allows the host to start the game, transitioning all players from the lobby to the playing phase and fetching the first card.
   const handleStartGame = async () => {
     clearError();
     setIsLoading(true);
@@ -489,6 +481,7 @@ export default function MultiplayerRoom({ onLeave }) {
     }
   };
 
+  // This function allows the host to end the game, transitioning all players to the finished phase and showing any end-of-game achievements.
   const handleEndGame = async () => {
     clearError();
     try {
@@ -502,6 +495,7 @@ export default function MultiplayerRoom({ onLeave }) {
     }
   };
 
+  // This function allows a player to leave the room, cleaning up any intervals and navigating back to the main dashboard.
   const handleLeaveRoom = async () => {
     const code = roomRef.current?.RoomCode;
     if (code) {
@@ -511,6 +505,7 @@ export default function MultiplayerRoom({ onLeave }) {
     onLeave();
   };
 
+  // This function submits the player's answer for the current card, updates the streak count based on correctness, shows any unlocked achievements, and refreshes the room data to update the scoreboard.
   const handleSubmitAnswer = async (answer) => {
     try {
       const data = await apiSubmitAnswer(roomRef.current.RoomCode, card.CardID, answer);
@@ -519,11 +514,9 @@ export default function MultiplayerRoom({ onLeave }) {
       } else {
         setStreak(0);
       }
-      // Show achievement toasts if any were unlocked (deduplicated against
-      // any already-shown achievements so per-answer toasts aren't repeated
-      // when the game ends and the polling response re-includes them).
-      showAchievements(data.new_achievements);
-      // Refresh room to get live scoreboard update
+  
+      showAchievements(data.new_achievements); 
+  
       const roomData = await getRoomDetail(roomRef.current.RoomCode);
       setRoom(roomData);
       return data;

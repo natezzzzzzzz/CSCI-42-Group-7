@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { fetchCards, createCard, updateCard, deleteCard, getImageUrl } from "../api/deckApi";
 
+// These components call upon the functions defined in deckApi.js to manage the cards within a deck. 
 export default function CardEditor({ deckId }) {
   const [cards, setCards] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");

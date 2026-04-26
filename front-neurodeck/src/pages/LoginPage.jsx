@@ -2,6 +2,8 @@ import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import AuthContext from "../context/AuthContext";
 
+// This page provides the login form for users to authenticate themselves. It includes fields for email and password, handles form submission, displays any error messages, and redirects to the main dashboard upon successful login. 
+// It also provides a link to the registration page for new users.
 export default function LoginPage() {
   const navigate = useNavigate();
   const { loginUser } = useContext(AuthContext);

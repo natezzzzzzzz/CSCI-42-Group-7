@@ -1,9 +1,9 @@
 from rest_framework import serializers
 from .models import MultiplayerRoom, RoomParticipant
 
-
+"""This returns full participant info — username + score + avatar — needed by the frontend."""
 class RoomParticipantSerializer(serializers.ModelSerializer):
-    """Returns full participant info — username + score + avatar — needed by the frontend."""
+    
     username = serializers.CharField(source="User.username", read_only=True)
     user_id = serializers.IntegerField(source="User.pk", read_only=True)
     avatar_url = serializers.SerializerMethodField()
@@ -26,7 +26,7 @@ class RoomParticipantSerializer(serializers.ModelSerializer):
         model = RoomParticipant
         fields = ["user_id", "username", "avatar_url", "Score", "JoinedAt", "CurrentCardSubmitted", "IsActive", "LastAnswerCorrect"]
 
-
+""" This provides a full serialization of the multiplayer room, including nested participant info and related deck/host details. """
 class MultiplayerRoomSerializer(serializers.ModelSerializer):
     participants = RoomParticipantSerializer(many=True, read_only=True)
     deck_name = serializers.CharField(source="Deck.DeckName", read_only=True)
@@ -42,7 +42,7 @@ class MultiplayerRoomSerializer(serializers.ModelSerializer):
             "participants",
         ]
 
-
+""" This serializer is used when a player submits an answer for a card, containing the necessary info to identify the room, card, and their answer. """
 class AnswerSerializer(serializers.Serializer):
     """
     room_code  — identifies which room the answer belongs to (avoids ambiguous deck lookup)

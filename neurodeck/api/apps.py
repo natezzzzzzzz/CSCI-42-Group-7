@@ -1,7 +1,7 @@
 from django.apps import AppConfig
 import os
 
-
+""" This module defines the AppConfig for the API app, including setup tasks like ensuring media directories exist on startup. """
 class ApiConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'api'
@@ -10,7 +10,7 @@ class ApiConfig(AppConfig):
         self._ensure_media_dirs()
 
     def _ensure_media_dirs(self):
-        """Create media directories and default image on startup if missing."""
+        """ Create media directories and default image on startup if missing."""
         from django.conf import settings
 
         media_root = settings.MEDIA_ROOT

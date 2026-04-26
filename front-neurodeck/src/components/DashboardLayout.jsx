@@ -2,6 +2,8 @@ import React, { useContext, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import AuthContext from "../context/AuthContext";
 
+
+// This component defines the main dashboard layout for the application, including the sidebar navigation, top bar, and main content area. 
 export default function DashboardLayout({ children, rightPanel }) {
   const navigate = useNavigate();
   const location = useLocation();

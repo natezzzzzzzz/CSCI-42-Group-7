@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models import Deck, Flashcard
 
+""" These are the admin configurations for the Deck and Flashcard models, allowing for easy management of decks and their associated flashcards in the admin interface. """
 
 class FlashcardInline(admin.TabularInline):
     model = Flashcard

@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import AuthContext from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 
+// This is the main menu page that users see after logging in. It provides a dashboard with cards linking to different sections of the app, such as decks, multiplayer, analytics, achievements, shop, and profile.
+// Each card has an icon, title, description, and a color scheme. The page also greets the user by name if available.
 const CARDS = [
   {
     path: "/decks",
