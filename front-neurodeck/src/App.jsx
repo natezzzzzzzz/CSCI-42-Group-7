@@ -14,6 +14,10 @@ import CosmeticsPage from "./pages/CosmeticsPage";
 import ProfilePage from "./pages/ProfilePage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
+// This is the main application component that sets up routing for the entire app. 
+// It uses React Router to define routes for all the different pages, and wraps protected routes with the ProtectedRoute component to ensure only authenticated users can access them. 
+
+
 function App() {
   return (
     <AchievementNotificationProvider>
