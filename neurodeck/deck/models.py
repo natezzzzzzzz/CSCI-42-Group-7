@@ -2,7 +2,9 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-# Utility function for incremental IDs
+""" This module defines the models for the Deck and Flashcard entities, along with their associated fields and methods. """
+
+""" This function generates sequential prefixed primary keys.  """
 def generate_id(prefix, model, digits=4):
     last = model.objects.order_by("-" + model._meta.pk.name).first()
     if last:

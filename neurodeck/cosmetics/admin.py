@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models import CosmeticItem, UserCosmetic, Avatar
 
+""" These are the admin configuration for the Cosmetics feature. """
 
 @admin.register(CosmeticItem)
 class CosmeticItemAdmin(admin.ModelAdmin):

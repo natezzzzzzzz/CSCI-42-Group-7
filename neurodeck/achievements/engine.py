@@ -121,7 +121,7 @@ class AchievementEngine:
             stats.solo_sessions_completed = F("solo_sessions_completed") + 1
             stats.total_decks_completed = F("total_decks_completed") + 1
             stats.save()
-            stats.refresh_from_db()  # ← fixed
+            stats.refresh_from_db()
 
         elif isinstance(event, GameCompletedEvent):
             stats.total_games_played = F("total_games_played") + 1
@@ -130,7 +130,7 @@ class AchievementEngine:
                 stats.total_games_won = F("total_games_won") + 1
                 stats.multiplayer_games_won = F("multiplayer_games_won") + 1
             stats.save()
-            stats.refresh_from_db()  # ← fixed
+            stats.refresh_from_db()
 
         elif isinstance(event, DeckCreatedEvent):
             pass
@@ -138,7 +138,7 @@ class AchievementEngine:
         elif isinstance(event, CardMasteredEvent):
             stats.cards_mastered = F("cards_mastered") + 1
             stats.save()
-            stats.refresh_from_db()  # ← fixed
+            stats.refresh_from_db()
 
     @classmethod
     def _update_study_streak(cls, stats):

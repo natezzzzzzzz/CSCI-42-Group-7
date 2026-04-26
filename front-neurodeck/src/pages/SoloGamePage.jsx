@@ -4,14 +4,18 @@ import { startSoloSession, rateSoloCard, reportSoloSessionComplete, getImageUrl 
 import { useAchievementNotify } from "../components/AchievementToast";
 import DashboardLayout from "../components/DashboardLayout";
 
+// This caps how many times a single card can be re-added to the queue in one session
+// to prevent an "Again" loop from making the session feel endless.
 const MAX_REQUEUES_PER_CARD = 3;
 
+// This page manages the solo study session for a given deck. It handles loading the session data, displaying cards one at a time, allowing the user to flip the card and rate their recall, and providing feedback on scheduling.
 export default function SoloGamePage() {
   const { deckId } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const daysAhead = parseInt(searchParams.get("days_ahead")) || 0;
   const notifyAchievement = useAchievementNotify();
+  // Guard against reporting session completion twice (e.g. finish-early + natural end).
   const completionReported = useRef(false);
   const sessionStartRef = useRef(Date.now());
 

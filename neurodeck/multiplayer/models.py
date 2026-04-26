@@ -3,7 +3,7 @@ from django.db import models
 
 
 def generate_id(prefix, model, digits=4):
-    """Generate a sequential prefixed ID (e.g. ROOM-0001)."""
+    """ This generates a sequential prefixed ID."""
     last = model.objects.order_by("-" + model._meta.pk.name).first()
     if last:
         last_num = last.pk.replace(prefix, "")
@@ -12,7 +12,7 @@ def generate_id(prefix, model, digits=4):
         new_num = 1
     return f"{prefix}{new_num:0{digits}d}"
 
-
+""" This module defines the models for the multiplayer rooms and participants, allowing users to create and join rooms for collaborative study sessions. """
 class MultiplayerRoom(models.Model):
     STATUS_CHOICES = [
         ("waiting", "Waiting"),
@@ -52,7 +52,7 @@ class MultiplayerRoom(models.Model):
     def __str__(self):
         return f"Room {self.RoomCode} [{self.Status}]"
 
-
+""" The RoomParticipant model tracks which users are in which rooms, their scores, and their current state in the game. """
 class RoomParticipant(models.Model):
     Room = models.ForeignKey(MultiplayerRoom, on_delete=models.CASCADE, related_name="participants")
     User = models.ForeignKey("api.User", on_delete=models.CASCADE, related_name="room_participations")

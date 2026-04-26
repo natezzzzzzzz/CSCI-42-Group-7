@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+// This page provides the registration form for new users to create an account. It includes fields for username, email, password, and password confirmation, along with error handling and feedback for the registration process. 
+// Upon successful registration, it redirects the user to the login page.
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");

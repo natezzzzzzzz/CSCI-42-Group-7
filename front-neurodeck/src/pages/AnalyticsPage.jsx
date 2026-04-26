@@ -12,6 +12,8 @@ const CATEGORY_COLORS = { general: "#6366f1", solo: "#22c55e", multiplayer: "#f5
 const CATEGORY_LABELS = { general: "General", solo: "Solo", multiplayer: "Multiplayer" };
 const PLAYER_TIER_COLORS = { Bronze: "#d97706", Silver: "#94a3b8", Gold: "#eab308", Platinum: "#818cf8", Diamond: "#67e8f9" };
 
+// This page displays the user's analytics data, including overall stats, recent activity, achievement category breakdown, and global leaderboard position. 
+// It fetches all necessary data from the API on load and handles any loading or error states gracefully.  
 export default function AnalyticsPage() {
   const { user } = useContext(AuthContext);
   const [stats, setStats] = useState(null);

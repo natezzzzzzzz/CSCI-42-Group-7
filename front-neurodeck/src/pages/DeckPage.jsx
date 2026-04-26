@@ -22,6 +22,8 @@ function formatDate(dateStr) {
   }
 }
 
+// This page displays the user's decks in a dashboard layout, allowing them to create new decks, search existing ones, view deck details, access settings, and start study sessions.
+// It also includes a right panel showing the global leaderboard. The page fetches the necessary data from the API and manages various UI states for modals and error handling.
 function LeaderboardPanel({ leaderboard }) {
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(leaderboard.length / ITEMS_PER_PAGE));

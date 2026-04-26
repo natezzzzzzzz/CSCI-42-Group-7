@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.db import models
 
+""" This module defines the data models for the achievements system. 
+These models form the foundation for implementing the achievements system and tracking user progress towards unlocking achievements. """
 
 class Achievement(models.Model):
     CATEGORY_CHOICES = [

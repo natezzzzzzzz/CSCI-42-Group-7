@@ -14,14 +14,9 @@ from deck.serializers import DeckSerializer
 from .models import MultiplayerRoom, RoomParticipant
 from .serializers import AnswerSerializer, MultiplayerRoomSerializer
 
-
+""" This creates game result records and fires achievement events when a multiplayer game finishes. """
 def _finalize_game(room):
-    """
-    Create GameResult records and fire achievement events for all active participants.
-    Called when a multiplayer game ends (natural finish, manual end, or last player leaves).
-    Idempotent — skips if GameResults already exist for this room.
-    Returns a dict mapping user IDs to lists of newly unlocked achievement dicts.
-    """
+    
     from achievements.engine import AchievementEngine, GameCompletedEvent
     from achievements.models import GameResult
 
@@ -40,7 +35,7 @@ def _finalize_game(room):
     top_score = scores[0] if scores else 0
     second_score = scores[1] if len(scores) > 1 else 0
 
-    # Require 2+ participants for win/margin achievements to prevent
+    # This requires 2+ participants for win/margin achievements to prevent
     # single-player games from trivially unlocking multiplayer awards.
     has_enough_players = participant_count >= 2
 
@@ -87,20 +82,15 @@ def _finalize_game(room):
 
 
 def generate_room_code():
-    """Generate a unique 6-character alphanumeric room code."""
+    """This generates a unique 6-character alphanumeric room code."""
     while True:
         code = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
         if not MultiplayerRoom.objects.filter(RoomCode=code).exists():
             return code
 
-
+""" This returns the card at the current index without advancing it. All players call this to read the same card. Index is only advanced by NextCardView. """
 class GetFlashcardView(APIView):
-    """
-    GET /multiplayer/<room_code>/flashcard/
-    Returns the card at the CURRENT index without advancing it.
-    All players call this to read the same card.
-    Index is only advanced by NextCardView (host-only POST).
-    """
+    
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -138,12 +128,9 @@ class GetFlashcardView(APIView):
         })
 
 
+""" This view allows the host to advance to the next card. It checks for unsynced players and can block advancement until they confirm. Non-hosts detect the change via polling RoomDetailView and re-fetch the card themselves. """
 class NextCardView(APIView):
-    """
-    POST /multiplayer/<room_code>/next/
-    Host-only. Advances CurrentCardIndex by 1.
-    Non-hosts detect the change via polling RoomDetailView and re-fetch the card themselves.
-    """
+   
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -158,8 +145,8 @@ class NextCardView(APIView):
 
         next_index = room.CurrentCardIndex + 1
 
-        # Check for unsynced players — warn and BLOCK advance unless host explicitly confirms
-        # Exclude the host from the unsynced check (host is a participant but shouldn't block themselves)
+        # This checks for unsynced players. It warns and blocks advance unless host explicitly confirms.
+        # It also excludes the host from the unsynced check. 
         unsynced_qs = RoomParticipant.objects.filter(Room=room, IsActive=True, CurrentCardSubmitted=False).exclude(User=request.user)
         unsynced_count = unsynced_qs.count()
         confirm = request.data.get("confirm", False) in (True, "true", "1")
@@ -188,13 +175,9 @@ class NextCardView(APIView):
 
         return Response({"current_round": next_index + 1, "total_rounds": room.TotalRounds})
 
-
+""" This creates a room and adds the requesting user as host + first participant. """
 class CreateRoomView(APIView):
-    """
-    POST /multiplayer/create-room/
-    Body: { deck_id }
-    Creates a room and adds the requesting user as host + first participant.
-    """
+
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -216,13 +199,9 @@ class CreateRoomView(APIView):
         serializer = MultiplayerRoomSerializer(room)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-
+""" This view allows a user to join an existing room by its code. It checks that the room is still joinable and adds the user as an active participant if they're not already in the room. """
 class JoinRoomView(APIView):
-    """
-    POST /multiplayer/join-room/
-    Body: { room_code }
-    Adds the requesting user to the room (idempotent — rejoining is safe).
-    """
+    
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -241,16 +220,10 @@ class JoinRoomView(APIView):
         serializer = MultiplayerRoomSerializer(room)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-
+""" This view allows a user to leave a room. If the leaving user is the host and the room is still active, it migrates host to the next earliest-joined participant. 
+    When all active participants have left, the room is finalized and deleted from the database. """
 class LeaveRoomView(APIView):
-    """
-    POST /multiplayer/leave-room/
-    Body: { room_code }
-    Marks the user as inactive in the room. If the room is still active
-    (waiting/playing) and the leaving user is the host, migrates host to the
-    next earliest-joined participant. When all active participants have left,
-    the room is finalized and deleted from the database.
-    """
+   
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -265,7 +238,7 @@ class LeaveRoomView(APIView):
         participant.IsActive = False
         participant.save(update_fields=["IsActive"])
 
-        # If the room is already finished, just check for cleanup — no host migration needed.
+        # If the room is already finished, just check for cleanup. No host migration needed.
         if room.Status == "finished":
             active_count = RoomParticipant.objects.filter(Room=room, IsActive=True).count()
             if active_count == 0:
@@ -276,7 +249,7 @@ class LeaveRoomView(APIView):
                     pass
             return Response({"detail": "Left room successfully."})
 
-        # Room is still active (waiting/playing) — handle host migration
+        # Migrate host if needed. If the leaving user is the host and the room is still active, migrate host to the next earliest-joined participant.
         if room.Host == request.user:
             next_host = (
                 RoomParticipant.objects
@@ -293,7 +266,7 @@ class LeaveRoomView(APIView):
                 room.save(update_fields=["Status"])
                 _finalize_game(room)
 
-        # If all players have now left, finalize and delete the room
+        # This finalizes and deletes the room when all active participants have left.
         active_count = RoomParticipant.objects.filter(Room=room, IsActive=True).count()
         if active_count == 0:
             _finalize_game(room)
@@ -304,14 +277,9 @@ class LeaveRoomView(APIView):
 
         return Response({"detail": "Left room successfully."})
 
-
+""" This view returns the full room details, including the current card, participant list, and related deck/host info. Clients poll this to stay in sync with room state changes. """
 class RoomDetailView(APIView):
-    """
-    GET /multiplayer/<room_code>/
-    Returns full room info including all participants and scores.
-    Used for polling by all clients. When the room is finished, also
-    returns any achievements the current user unlocked during this game.
-    """
+    
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -338,14 +306,9 @@ class RoomDetailView(APIView):
 
         return Response(data)
 
-
+""" This view allows the host to start a game in a waiting room. """
 class StartGameView(APIView):
-    """
-    POST /multiplayer/<room_code>/start/
-    Host-only. Transitions room from 'waiting' → 'playing'.
-    Accepts optional body: { rounds } — number of rounds to play (capped at deck size).
-    Initialises a deterministic shuffled card order so all players see the same cards.
-    """
+    
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -384,11 +347,9 @@ class StartGameView(APIView):
         return Response(serializer.data)
 
 
+""" This view allows the host to end an active game, transitioning the room to 'finished' and triggering game finalization logic. """
 class EndGameView(APIView):
-    """
-    POST /multiplayer/<room_code>/end/
-    Host-only. Transitions room from 'playing' → 'finished'.
-    """
+   
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -412,14 +373,9 @@ class EndGameView(APIView):
         my_achievements = achievements_by_user.get(request.user.id, [])
         return Response({**serializer.data, "new_achievements": my_achievements})
 
-
+""" This view allows a player to submit their answer for the current card. It grades the answer server-side, updates the participant's score if correct, and returns the result along with any newly unlocked achievements. """
 class SubmitAnswerView(APIView):
-    """
-    POST /multiplayer/submit-answer/
-    Body: { room_code, card_id, answer }
-    Grades the answer server-side and increments the participant's score if correct.
-    Returns updated score and whether the answer was correct.
-    """
+    
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -444,7 +400,7 @@ class SubmitAnswerView(APIView):
         participant.LastAnswerCorrect = is_correct
         participant.save(update_fields=["CurrentCardSubmitted", "LastAnswerCorrect"])
 
-        # --- Achievement system integration ---
+        # Integration with achievements system
         from achievements.engine import AchievementEngine, AnswerSubmittedEvent, CardStudiedEvent
         from achievements.models import AnswerRecord
 
@@ -493,12 +449,9 @@ class SubmitAnswerView(APIView):
             ],
         })
 
-
+""" This view returns a lightweight list of the authenticated user's decks for the room-creation picker. """
 class ListDecksForRoomView(APIView):
-    """
-    GET /multiplayer/decks/
-    Returns a lightweight list of the authenticated user's decks for the room-creation picker.
-    """
+    
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 

@@ -7,6 +7,8 @@ from .engine import (
     register_evaluator,
 )
 
+""" This module defines the evaluator functions for different achievement types. 
+ Each function checks if the users stats meet the criteria for unlocking a specific achievement based on the event that occurred. """
 
 @register_evaluator("cards_studied")
 def eval_cards_studied(user, stats, event, achievement):

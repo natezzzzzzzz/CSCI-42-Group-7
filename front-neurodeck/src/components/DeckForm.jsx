@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { createDeck } from "../api/deckApi";
 
+// This component provides a form for creating a new deck. It collects the deck name, category, and description from the user and calls the createDeck function to save it.
 export default function DeckForm({ onDeckCreated }) {
   const [deckName, setDeckName] = useState("");
   const [category, setCategory] = useState("");

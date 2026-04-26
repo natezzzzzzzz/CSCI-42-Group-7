@@ -10,6 +10,9 @@ const RARITY_COLORS = {
   legendary: { text: "#b45309", bg: "#fffbeb" },
 };
 
+
+// This page displays the cosmetics shop where users can view available cosmetic items, see their current coin balance, purchase new items, and equip owned items.
+// It fetches the list of items and the user's current currency from the API, and provides functions to handle purchasing and equipping items, with appropriate UI feedback for success or failure of these actions.
 export default function CosmeticsPage() {
   const navigate = useNavigate();
   const [items, setItems] = useState([]);

@@ -4,6 +4,8 @@ import { fetchAvatar, fetchMyCosmetics, equipCosmetic } from "../api/deckApi.js"
 import AuthContext from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 
+// This page displays the user's profile, including their avatar and owned cosmetic items. Users can equip or unequip cosmetics directly from this page, and it provides a link to the shop for acquiring new items. 
+// The page fetches the necessary data from the API and handles loading states and user feedback for actions taken on the profile.
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);

@@ -5,6 +5,7 @@ const AuthContext = createContext();
 export default AuthContext;
 
 export const AuthProvider = ({ children }) => {
+  // Hydrate from localStorage on first load so the user stays logged in on refresh.
   const [authTokens, setAuthTokens] = useState(() => {
     const access = localStorage.getItem("access");
     const refresh = localStorage.getItem("refresh");
@@ -20,6 +21,7 @@ export const AuthProvider = ({ children }) => {
     }
   });
 
+  // Fetches a token pair, stores both in localStorage, and updates context state.
   const loginUser = async (email, password) => {
     const response = await fetch("http://127.0.0.1:8000/api/token/", {
       method: "POST",
@@ -40,6 +42,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Wipes tokens from storage and resets context — no server-side call needed.
   const logoutUser = () => {
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");

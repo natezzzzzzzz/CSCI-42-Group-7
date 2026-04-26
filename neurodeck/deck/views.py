@@ -11,6 +11,7 @@ from .serializers import DeckSerializer, FlashcardSerializer
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def deck_list(request):
+    """Lists all decks owned by the current user."""
     decks = Deck.objects.filter(UserID=request.user)
     serializer = DeckSerializer(decks, many=True)
     return Response(serializer.data)
@@ -19,6 +20,7 @@ def deck_list(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_deck_api(request):
+    """ Create a new deck for the current user."""
     serializer = DeckSerializer(data=request.data)
     if serializer.is_valid():
         deck = serializer.save(UserID=request.user)
@@ -29,6 +31,7 @@ def create_deck_api(request):
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def delete_deck_api(request, deck_id):
+    """ Permanently remove a deck."""
     deck = Deck.objects.filter(DeckID=deck_id, UserID=request.user).first()
     if not deck:
         return Response({"error": "Deck not found"}, status=404)
@@ -39,6 +42,7 @@ def delete_deck_api(request, deck_id):
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
 def update_deck(request, deck_id):
+    """ Update the name, category, description, or visibility of a deck."""
     deck = Deck.objects.filter(DeckID=deck_id, UserID=request.user).first()
     if not deck:
         return Response({"error": "Deck not found"}, status=404)
@@ -62,7 +66,7 @@ def update_deck(request, deck_id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def list_cards(request, deck_id):
-    """List all flashcards in a deck. Deck must belong to the requesting user."""
+    """ Lists all flashcards in a deck. Deck must belong to the requesting user."""
     deck = Deck.objects.filter(DeckID=deck_id, UserID=request.user).first()
     if not deck:
         return Response({"error": "Deck not found"}, status=404)
@@ -73,7 +77,7 @@ def list_cards(request, deck_id):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_card(request, deck_id):
-    """Create a flashcard inside a deck the user owns."""
+    """ Create a flashcard inside a deck the user owns."""
     deck = Deck.objects.filter(DeckID=deck_id, UserID=request.user).first()
     if not deck:
         return Response({"error": "Deck not found"}, status=404)
@@ -88,7 +92,7 @@ def create_card(request, deck_id):
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
 def update_card(request, deck_id, card_id):
-    """Edit the question or answer of a card. Deck ownership is enforced."""
+    """ Edit the question or answer of a card. Deck ownership is enforced."""
     deck = Deck.objects.filter(DeckID=deck_id, UserID=request.user).first()
     if not deck:
         return Response({"error": "Deck not found"}, status=404)
@@ -120,7 +124,7 @@ def update_card(request, deck_id, card_id):
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def delete_card(request, deck_id, card_id):
-    """Delete a card from a deck the user owns."""
+    """ Delete a card from a deck the user owns."""
     deck = Deck.objects.filter(DeckID=deck_id, UserID=request.user).first()
     if not deck:
         return Response({"error": "Deck not found"}, status=404)
@@ -139,12 +143,7 @@ def delete_card(request, deck_id, card_id):
 @api_view(["GET", "PATCH"])
 @permission_classes([IsAuthenticated])
 def deck_settings(request, deck_id):
-    """
-    GET /deck/api/decks/<deck_id>/settings/
-    PATCH /deck/api/decks/<deck_id>/settings/
-
-    Get or update per-deck spaced repetition settings (daily limits).
-    """
+    """ This gets current daily limits for new, learning, and review cards."""
     deck = Deck.objects.filter(DeckID=deck_id, UserID=request.user).first()
     if not deck:
         return Response({"error": "Deck not found"}, status=404)
@@ -186,12 +185,7 @@ def deck_settings(request, deck_id):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def deck_study_stats(request, deck_id):
-    """
-    GET /deck/api/decks/<deck_id>/study-stats/
-
-    Returns study breakdown for a deck: card counts by state,
-    due today, studied today, and remaining capacity.
-    """
+    """ This endpoint returns a breakdown of the user's study stats for a deck. """
     deck = Deck.objects.filter(DeckID=deck_id, UserID=request.user).first()
     if not deck:
         return Response({"error": "Deck not found"}, status=404)
@@ -200,7 +194,7 @@ def deck_study_stats(request, deck_id):
     now = timezone.now()
     today = now.date()
 
-    # Card counts by state
+    
     all_progress = CardProgress.objects.filter(
         UserID=request.user, CardID__DeckID=deck
     )
@@ -280,15 +274,7 @@ def deck_study_stats(request, deck_id):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def solo_start_session(request):
-    """
-    POST /deck/api/solo/start-session/
-    Body: { deck_id, days_ahead (optional, default 0) }
-
-    Returns due and new cards for a spaced repetition study session,
-    respecting per-deck daily limits. days_ahead includes cards due
-    within N days from now (for custom study / study ahead).
-    Cards are ordered: relearning > learning > review (overdue first) > new.
-    """
+    """ This is called when the user starts a solo study session. It returns a list of cards that are due for review, up to the daily limits, sorted by priority and next review time. """
     deck_id = request.data.get("deck_id")
     days_ahead = request.data.get("days_ahead", 0)
     try:
@@ -319,12 +305,13 @@ def solo_start_session(request):
 
     cards = Flashcard.objects.filter(DeckID=deck)
 
-    # Get or create CardProgress for each card, categorize by state
+    # This gets or create CardProgress for each card, categorize by state
     card_data = []
     new_cards = []
     learning_cards = []
     review_cards = []
 
+    """ This loop processes each card in the deck and categorizes it based on its progress state. """
     for card in cards:
         progress, _ = CardProgress.objects.get_or_create(
             UserID=request.user,
@@ -332,7 +319,6 @@ def solo_start_session(request):
             defaults={"State": CardProgress.CardState.NEW, "EF": 2.5},
         )
 
-        # Card is due if NextReview is null (new) or <= cutoff
         is_due = progress.NextReview is None or progress.NextReview <= cutoff
         if not is_due:
             continue
@@ -353,7 +339,7 @@ def solo_start_session(request):
 
     card_data = capped_review + capped_learning + capped_new
 
-    # Sort: relearning > learning > review > new; within group by NextReview asc
+    # This sorts the cards first by their state and then by their next review time within each state.
     state_priority = {
         CardProgress.CardState.RELEARNING: 0,
         CardProgress.CardState.LEARNING: 1,
@@ -367,8 +353,10 @@ def solo_start_session(request):
 
     from .spaced_repetition import Rating as SRRating, schedule as sr_schedule, format_next_review
 
+
+    """ This function computes the next-review label for each possible rating (1-4) for a given card's progress. """
     def _build_previews(progress):
-        """Compute the next-review label for each possible rating."""
+        """It computes the next-review label for each possible rating."""
         previews = {}
         for rv in [1, 2, 3, 4]:
             result = sr_schedule(
@@ -417,18 +405,11 @@ def solo_start_session(request):
         ],
     })
 
-
+""" This endpoint allows the user to rate a card after reviewing it. """
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def solo_rate_card(request):
-    """
-    POST /deck/api/solo/rate-card/
-    Body: { card_id, rating }
-    rating: 1=Very Difficult, 2=Difficult, 3=Okay, 4=Easy
-
-    Rates a card, updates CardProgress with SM-2 scheduling,
-    fires achievement events, and returns the scheduling result.
-    """
+    
     card_id = request.data.get("card_id")
     rating = request.data.get("rating")
 
@@ -535,7 +516,7 @@ def solo_rate_card(request):
             mode="solo",
         )
 
-    # Compute previews for the card's new state (useful if re-queued)
+    """ This computes previews for the card's new state based on each possible rating. """
     previews = {}
     for rv in [1, 2, 3, 4]:
         preview_result = schedule(
@@ -571,16 +552,11 @@ def solo_rate_card(request):
         ],
     })
 
-
+""" This records that a card was studied and optionally an answer result. """
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def solo_card_studied(request):
-    """
-    POST /deck/api/solo/card-studied/
-    Body: { card_id, is_correct (optional) }
-    Records that a card was studied and optionally an answer result.
-    (Legacy endpoint — prefer rate-card for spaced repetition.)
-    """
+
     card_id = request.data.get("card_id")
     is_correct = request.data.get("is_correct")
 
@@ -611,7 +587,7 @@ def solo_card_studied(request):
         }
     )
 
-
+""" This fires an event that can be used to track achievements related to completing sessions. """
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def solo_session_complete(request):

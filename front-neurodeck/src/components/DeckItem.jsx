@@ -4,6 +4,7 @@ import CardEditor from "./CardEditor";
 import DeckSettingsModal from "./DeckSettingsModal";
 import CustomStudyModal from "./CustomStudyModal";
 
+// This component calls upon the functions defined in deckApi.js to manage the cards within a deck. 
 export default function DeckItem({ deck, onDelete, onUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
   const [showCards, setShowCards] = useState(false);

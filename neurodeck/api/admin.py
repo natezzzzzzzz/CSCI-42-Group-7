@@ -10,8 +10,7 @@ class UserAdmin(BaseUserAdmin):
     ordering = ['email']
     search_fields = ['email', 'username']
 
-    # BaseUserAdmin expects 'username' as the primary field — override fieldsets
-    # so the admin form works correctly with email as USERNAME_FIELD.
+    
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
         ('Personal info', {'fields': ('username',)}),
