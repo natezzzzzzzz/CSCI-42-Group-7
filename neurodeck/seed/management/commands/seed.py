@@ -1,15 +1,3 @@
-"""
-Django management command to populate the database with sample users, decks,
-and flashcards — including cards with images on the question side, answer side,
-or both.
-
-Usage:
-    python manage.py seed
-
-The command is idempotent: it skips creating objects whose email/username
-already exist in the database.
-"""
-
 import os
 from io import BytesIO
 
@@ -23,7 +11,6 @@ from api.models import User
 from deck.models import Deck, Flashcard
 
 
-# ── Colour palette for placeholder images ──────────────────────────────────
 PALETTE = {
     "blue": (59, 130, 246),
     "green": (34, 197, 94),
@@ -41,7 +28,6 @@ def _make_placeholder_image(label, bg_color, size=(400, 300)):
     img = Image.new("RGB", size, bg_color)
     draw = ImageDraw.Draw(img)
 
-    # Use default font (no need for system fonts)
     try:
         font = ImageFont.truetype("arial.ttf", 24)
     except (OSError, IOError):
@@ -74,92 +60,74 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS("Done! Database seeded.\n"))
 
-    # ── Achievements ──────────────────────────────────────────────────────
 
     def _create_achievements(self):
         """Create 50 achievements covering all registered evaluator criteria.
         Idempotent: skips achievements whose name already exists."""
         achievement_specs = [
-            # ── cards_studied ──────────────────────────────────────────────
             ("First Steps", "Study your first flashcard.", "book", "cards_studied", 1, False, "solo", "bronze", 10),
             ("Bookworm", "Study 25 flashcards.", "book", "cards_studied", 25, False, "solo", "bronze", 10),
             ("Scholar", "Study 100 flashcards.", "book-open", "cards_studied", 100, False, "solo", "silver", 25),
             ("Knowledge Seeker", "Study 500 flashcards.", "book-open", "cards_studied", 500, False, "solo", "gold", 50),
             ("Walking Encyclopedia", "Study 1,000 flashcards.", "library", "cards_studied", 1000, False, "solo", "platinum", 100),
 
-            # ── decks_completed ────────────────────────────────────────────
             ("Deck Apprentice", "Complete your first deck.", "layers", "decks_completed", 1, False, "solo", "bronze", 10),
             ("Deck Master", "Complete 5 decks.", "layers", "decks_completed", 5, False, "solo", "silver", 25),
             ("Deck Champion", "Complete 15 decks.", "award", "decks_completed", 15, False, "solo", "gold", 50),
             ("Deck Legend", "Complete 30 decks.", "crown", "decks_completed", 30, False, "solo", "platinum", 100),
 
-            # ── correct_answers ───────────────────────────────────────────
             ("Sharp Mind", "Get 10 correct answers.", "check-circle", "correct_answers", 10, False, "general", "bronze", 10),
             ("Quick Thinker", "Get 50 correct answers.", "check-circle", "correct_answers", 50, False, "general", "silver", 25),
             ("Brain Power", "Get 250 correct answers.", "brain", "correct_answers", 250, False, "general", "gold", 50),
 
-            # ── answer_streak ────────────────────────────────────────────
             ("On a Roll", "Achieve a best streak of 3.", "fire", "answer_streak", 3, False, "general", "bronze", 10),
             ("Hot Streak", "Achieve a best streak of 10.", "fire", "answer_streak", 10, False, "general", "silver", 25),
             ("Unstoppable", "Achieve a best streak of 25.", "flame", "answer_streak", 25, False, "general", "gold", 50),
             ("Flawless Focus", "Achieve a best streak of 50.", "diamond", "answer_streak", 50, False, "general", "platinum", 100),
 
-            # ── current_streak ────────────────────────────────────────────
             ("In the Zone", "Get a current streak of 5.", "zap", "current_streak", 5, False, "general", "bronze", 10),
             ("Riding the Wave", "Get a current streak of 15.", "zap", "current_streak", 15, False, "general", "silver", 25),
             ("Locked In", "Get a current streak of 30.", "bolt", "current_streak", 30, False, "general", "gold", 50),
 
-            # ── games_played ──────────────────────────────────────────────
             ("Social Learner", "Play your first multiplayer game.", "gamepad", "games_played", 1, False, "multiplayer", "bronze", 10),
             ("Regular Competitor", "Play 10 multiplayer games.", "gamepad", "games_played", 10, False, "multiplayer", "silver", 25),
             ("Tournament Veteran", "Play 50 multiplayer games.", "sword", "games_played", 50, False, "multiplayer", "gold", 50),
 
-            # ── games_won ────────────────────────────────────────────────
             ("First Victory", "Win your first multiplayer game.", "trophy", "games_won", 1, False, "multiplayer", "bronze", 10),
             ("Consistent Winner", "Win 5 multiplayer games.", "trophy", "games_won", 5, False, "multiplayer", "silver", 25),
             ("Champion", "Win 25 multiplayer games.", "crown", "games_won", 25, False, "multiplayer", "gold", 50),
             ("Dominator", "Win 50 multiplayer games.", "crown", "games_won", 50, False, "multiplayer", "platinum", 100),
 
-            # ── accuracy ─────────────────────────────────────────────────
             ("Precise", "Reach 60% overall accuracy.", "target", "accuracy", 60, False, "general", "bronze", 10),
             ("Sharpshooter", "Reach 75% overall accuracy.", "crosshair", "accuracy", 75, False, "general", "silver", 25),
             ("Marksman", "Reach 90% overall accuracy.", "bullseye", "accuracy", 90, False, "general", "gold", 50),
 
-            # ── multiplayer_games_played ──────────────────────────────────
             ("Social Butterfly", "Play 5 multiplayer games.", "users", "multiplayer_games_played", 5, False, "multiplayer", "bronze", 10),
             ("Party Regular", "Play 20 multiplayer games.", "users", "multiplayer_games_played", 20, False, "multiplayer", "silver", 25),
             ("Networker", "Play 50 multiplayer games.", "globe", "multiplayer_games_played", 50, False, "multiplayer", "gold", 50),
-
-            # ── solo_sessions ────────────────────────────────────────────
             ("Solo Starter", "Complete your first solo session.", "user", "solo_sessions", 1, False, "solo", "bronze", 10),
             ("Solo Student", "Complete 10 solo sessions.", "user", "solo_sessions", 10, False, "solo", "silver", 25),
             ("Lone Wolf", "Complete 50 solo sessions.", "shield", "solo_sessions", 50, False, "solo", "gold", 50),
             ("Hermit", "Complete 100 solo sessions.", "mountain", "solo_sessions", 100, False, "solo", "platinum", 100),
 
-            # ── study_days ────────────────────────────────────────────────
             ("Dedicated", "Study 3 days in a row.", "calendar", "study_days", 3, False, "general", "bronze", 10),
             ("Committed", "Study 7 days in a row.", "calendar", "study_days", 7, False, "general", "silver", 25),
             ("Devoted", "Study 14 days in a row.", "calendar-check", "study_days", 14, False, "general", "gold", 50),
             ("Unwavering", "Study 30 days in a row.", "infinity", "study_days", 30, False, "general", "platinum", 100),
 
-            # ── perfect_game ──────────────────────────────────────────────
             ("Flawless Round", "Answer every question correctly in a multiplayer game.", "star", "perfect_game", 1, False, "multiplayer", "bronze", 10),
             ("Perfect Performer", "Achieve a perfect game with style.", "star", "perfect_game", 1, True, "multiplayer", "gold", 50),
 
-            # ── winner_by_margin ──────────────────────────────────────────
             ("Convincing Win", "Win a game by a margin of 3 or more.", "trophy", "winner_by_margin", 3, False, "multiplayer", "bronze", 10),
             ("Dominant Victory", "Win a game by a margin of 5 or more.", "medal", "winner_by_margin", 5, False, "multiplayer", "silver", 25),
             ("Crushing Blowout", "Win a game by a margin of 8 or more.", "award", "winner_by_margin", 8, False, "multiplayer", "gold", 50),
 
-            # ── cards_mastered ────────────────────────────────────────────
             ("Card Conqueror", "Master 10 cards through spaced repetition.", "award", "cards_mastered", 10, False, "solo", "bronze", 10),
             ("Memory Master", "Master 50 cards through spaced repetition.", "gem", "cards_mastered", 50, False, "solo", "gold", 50),
 
-            # ── spaced_repetition_reviews ────────────────────────────────
             ("Repetition Rookie", "Complete 10 spaced repetition reviews.", "repeat", "spaced_repetition_reviews", 10, False, "solo", "bronze", 10),
             ("Spaced Repetition Pro", "Complete 50 spaced repetition reviews.", "refresh-cw", "spaced_repetition_reviews", 50, False, "solo", "silver", 25),
 
-            # ── late_night_study ──────────────────────────────────────────
             ("Night Owl", "Complete a solo session between midnight and 5 AM.", "moon", "late_night_study", 1, True, "solo", "silver", 25),
         ]
 
@@ -182,7 +150,6 @@ class Command(BaseCommand):
                 count += 1
         self.stdout.write(f"  Created {count} achievements (50 total defined)")
 
-    # ── Users ──────────────────────────────────────────────────────────────
 
     def _create_users(self):
         """Create three test users. Skips if they already exist."""
@@ -206,7 +173,6 @@ class Command(BaseCommand):
             users[username] = user
         return users
 
-    # ── Decks ──────────────────────────────────────────────────────────────
 
     def _create_decks(self, users):
         """Create sample decks for each user."""
@@ -235,7 +201,6 @@ class Command(BaseCommand):
             decks[name] = deck
         return decks
 
-    # ── Flashcards ─────────────────────────────────────────────────────────
 
     def _create_flashcards(self, decks):
         """Create flashcards with varying content types:
@@ -248,7 +213,6 @@ class Command(BaseCommand):
 
         colour_keys = list(PALETTE.keys())
 
-        # ── Biology 101 (alice) ────────────────────────────────────────
         bio = decks["Biology 101"]
 
         card_specs = [
@@ -256,7 +220,6 @@ class Command(BaseCommand):
             {"Question": "What is the powerhouse of the cell?", "Answer": "Mitochondria"},
             {"Question": "What organelle is responsible for photosynthesis?", "Answer": "Chloroplast"},
             {"Question": "What is the basic unit of life?", "Answer": "Cell"},
-            # Card with question image — a diagram
             {
                 "Question": "What cellular structure is shown in this diagram?",
                 "Answer": "Cell membrane",
@@ -279,7 +242,6 @@ class Command(BaseCommand):
                 "answer_image_label": "mitochondria_a",
                 "answer_image_color": "orange",
             },
-            # Image-only card (question text is descriptive, answer is just "None"/label)
             {
                 "Question": "Name this organelle",
                 "Answer": "Golgi apparatus",
@@ -289,7 +251,6 @@ class Command(BaseCommand):
         ]
         self._create_cards(bio, card_specs, colour_keys)
 
-        # ── World Capitals (alice) ────────────────────────────────────
         geo = decks["World Capitals"]
         card_specs = [
             {"Question": "What is the capital of France?", "Answer": "Paris"},
@@ -306,7 +267,6 @@ class Command(BaseCommand):
         ]
         self._create_cards(geo, card_specs, colour_keys)
 
-        # ── Spanish Vocabulary (bob) ───────────────────────────────────
         spanish = decks["Spanish Vocabulary"]
         card_specs = [
             {"Question": "How do you say 'hello' in Spanish?", "Answer": "Hola"},
@@ -322,7 +282,6 @@ class Command(BaseCommand):
         ]
         self._create_cards(spanish, card_specs, colour_keys)
 
-        # ── JavaScript Basics (bob) ────────────────────────────────────
         js = decks["JavaScript Basics"]
         card_specs = [
             {"Question": "What is the output of typeof null?", "Answer": "object"},
@@ -345,7 +304,6 @@ class Command(BaseCommand):
         ]
         self._create_cards(js, card_specs, colour_keys)
 
-        # ── Art History (carol) ────────────────────────────────────────
         art = decks["Art History"]
         card_specs = [
             {"Question": "Who painted the Mona Lisa?", "Answer": "Leonardo da Vinci"},
